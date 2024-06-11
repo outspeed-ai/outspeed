@@ -31,12 +31,17 @@ fireworks-ai = "^0.14.0"
 google-generativeai = "^0.5.3"
 openai = "^1.24.0"
 pillow = "^10.3.0"
-torch = [{version = "^2.3.0+cpu", source = "pytorch-cpu", markers = "sys_platform == 'linux'"}, {version = "^2.3.0", markers = "sys_platform != 'linux'"}]
-torchaudio = [{version = "^2.3.0+cpu", source = "pytorch-cpu", markers = "sys_platform == 'linux'"}, {version = "^2.3.0", markers = "sys_platform != 'linux'"}]
-torchvision = [{version = "^0.18.0+cpu",source = "pytorch-cpu", markers = "sys_platform == 'linux'"}, {version = "^0.18.0", markers = "sys_platform != 'linux'"}]
 numpy = "^1.26.4"
 opencv-python-headless = "^4.10.0.82"
 azure-cognitiveservices-speech = "^1.37.0"
+
+[tool.poetry.group.torch]
+optional = true
+
+[tool.poetry.group.torch.dependencies]
+torch = "^2.3.0"
+torchaudio = "^2.3.0"
+torchvision = "^0.18.0"
 
 [tool.poetry.extras]
 plugins = ["fal-client", 
@@ -45,12 +50,12 @@ plugins = ["fal-client",
         "google-generativeai", 
         "openai", 
         "pillow", 
-        "torch", 
-        "torchaudio", 
-        "torchvision", 
         "numpy", 
         "opencv-python-headless",
         "azure-cognitiveservices-speech"]
+torch = ["torch", 
+        "torchaudio", 
+        "torchvision"]
 
 [tool.poetry.group.dev.dependencies]
 aiohttp-middlewares = "^2.3.0"

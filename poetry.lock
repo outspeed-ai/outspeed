@@ -2922,43 +2922,6 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 optree = ["optree (>=0.9.1)"]
 
 [[package]]
-name = "torch"
-version = "2.3.1+cpu"
-description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
-optional = false
-python-versions = ">=3.8.0"
-files = [
-    {file = "torch-2.3.1+cpu-cp310-cp310-linux_x86_64.whl", hash = "sha256:d679e21d871982b9234444331a26350902cfd2d5ca44ce6f49896af8b3a3087d"},
-    {file = "torch-2.3.1+cpu-cp310-cp310-win_amd64.whl", hash = "sha256:500bf790afc2fd374a15d06213242e517afccc50a46ea5955d321a9a68003335"},
-    {file = "torch-2.3.1+cpu-cp311-cp311-linux_x86_64.whl", hash = "sha256:a272defe305dbd944aa28a91cc3db0f0149495b3ebec2e39723a7224fa05dc57"},
-    {file = "torch-2.3.1+cpu-cp311-cp311-win_amd64.whl", hash = "sha256:d2965eb54d3c8818e2280a54bd53e8246a6bb34e4b10bd19c59f35b611dd9f05"},
-    {file = "torch-2.3.1+cpu-cp312-cp312-linux_x86_64.whl", hash = "sha256:2141a6cb7021adf2f92a0fd372cfeac524ba460bd39ce3a641d30a561e41f69a"},
-    {file = "torch-2.3.1+cpu-cp312-cp312-win_amd64.whl", hash = "sha256:6acdca2530462611095c44fd95af75ecd5b9646eac813452fe0adf31a9bc310a"},
-    {file = "torch-2.3.1+cpu-cp38-cp38-linux_x86_64.whl", hash = "sha256:cab92d5101e6db686c5525e04d87cedbcf3a556073d71d07fbe7d1ce09630ffb"},
-    {file = "torch-2.3.1+cpu-cp38-cp38-win_amd64.whl", hash = "sha256:dbc784569a367fd425158cf4ae82057dd3011185ba5fc68440432ba0562cb5b2"},
-    {file = "torch-2.3.1+cpu-cp39-cp39-linux_x86_64.whl", hash = "sha256:a3cb8e61ba311cee1bb7463cbdcf3ebdfd071e2091e74c5785e3687eb02819f9"},
-    {file = "torch-2.3.1+cpu-cp39-cp39-win_amd64.whl", hash = "sha256:df68668056e62c0332e03f43d9da5d4278b39df1ba58d30ec20d34242070955d"},
-]
-
-[package.dependencies]
-filelock = "*"
-fsspec = "*"
-jinja2 = "*"
-mkl = {version = ">=2021.1.1,<=2021.4.0", markers = "platform_system == \"Windows\""}
-networkx = "*"
-sympy = "*"
-typing-extensions = ">=4.8.0"
-
-[package.extras]
-opt-einsum = ["opt-einsum (>=3.3)"]
-optree = ["optree (>=0.9.1)"]
-
-[package.source]
-type = "legacy"
-url = "https://download.pytorch.org/whl/cpu"
-reference = "pytorch-cpu"
-
-[[package]]
 name = "torchaudio"
 version = "2.3.1"
 description = "An audio package for PyTorch"
@@ -2989,33 +2952,6 @@ files = [
 
 [package.dependencies]
 torch = "2.3.1"
-
-[[package]]
-name = "torchaudio"
-version = "2.3.1+cpu"
-description = "An audio package for PyTorch"
-optional = false
-python-versions = "*"
-files = [
-    {file = "torchaudio-2.3.1+cpu-cp310-cp310-linux_x86_64.whl", hash = "sha256:e156d43a1d48073f4eed943ddf0285b9079fc93ce41371172cd1e94ac766f803"},
-    {file = "torchaudio-2.3.1+cpu-cp310-cp310-win_amd64.whl", hash = "sha256:fed18fd46c61f3c35912e0d9731b9e512c99d387c4f5f22e0b12f55247d5db2f"},
-    {file = "torchaudio-2.3.1+cpu-cp311-cp311-linux_x86_64.whl", hash = "sha256:37cb3d8b003e8fc7bc7a6b0bd1c7a033960d77efb688f4d40464055a07ea6bbe"},
-    {file = "torchaudio-2.3.1+cpu-cp311-cp311-win_amd64.whl", hash = "sha256:679c0b6c320c274fdb91243fce4f319a24537b9c1ccbe20dca53b40a4ef073ca"},
-    {file = "torchaudio-2.3.1+cpu-cp312-cp312-linux_x86_64.whl", hash = "sha256:f8a3ba91df57fd9229c96188cbb56f9f960e9adee26c4e57e8e5a3fdbe81b2a8"},
-    {file = "torchaudio-2.3.1+cpu-cp312-cp312-win_amd64.whl", hash = "sha256:362b3859c61175479465360a86409847e27e82b0044b77b036e4155ed5ff1241"},
-    {file = "torchaudio-2.3.1+cpu-cp38-cp38-linux_x86_64.whl", hash = "sha256:35b9de13a630cda5ba1609c0b09fd31d33783474693029d74930f8b3929d98f3"},
-    {file = "torchaudio-2.3.1+cpu-cp38-cp38-win_amd64.whl", hash = "sha256:201757a38be7fc4bc95a250003ee868563ee0d3418d9cefccf297ed4c6b46f68"},
-    {file = "torchaudio-2.3.1+cpu-cp39-cp39-linux_x86_64.whl", hash = "sha256:991648187bea353d8b4c3f09b59f26b1a602a072afd5130982bc1b3ec9630504"},
-    {file = "torchaudio-2.3.1+cpu-cp39-cp39-win_amd64.whl", hash = "sha256:004e197b5015ab4c912c9393f1aae05241a549dc895dbf8c5682ba8dd6066665"},
-]
-
-[package.dependencies]
-torch = "2.3.1"
-
-[package.source]
-type = "legacy"
-url = "https://download.pytorch.org/whl/cpu"
-reference = "pytorch-cpu"
 
 [[package]]
 name = "torchvision"
@@ -3053,38 +2989,6 @@ torch = "2.3.1"
 
 [package.extras]
 scipy = ["scipy"]
-
-[[package]]
-name = "torchvision"
-version = "0.18.1+cpu"
-description = "image and video datasets and models for torch deep learning"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "torchvision-0.18.1+cpu-cp310-cp310-linux_x86_64.whl", hash = "sha256:2ae9d4e4e11bc43c7ee6c7c7e87b1e6adf5503ad0710e59cd86bc7b1a342d75a"},
-    {file = "torchvision-0.18.1+cpu-cp310-cp310-win_amd64.whl", hash = "sha256:eb7375cc96c53d2ffd98be5906f2e4cd7e304c88fd3406d334d5b7ae91511665"},
-    {file = "torchvision-0.18.1+cpu-cp311-cp311-linux_x86_64.whl", hash = "sha256:2c4d6b5c054e5b31d9b23da5c8d70f271307515c2a9f3a234823213bb5997b13"},
-    {file = "torchvision-0.18.1+cpu-cp311-cp311-win_amd64.whl", hash = "sha256:a002db2ef1137f5eff2b03843ad5cd1514ee09b9eaa5765f19cd03bced036f35"},
-    {file = "torchvision-0.18.1+cpu-cp312-cp312-linux_x86_64.whl", hash = "sha256:e234971d465e8ce481a2718375d9f0797b4381c2d79bb1a546a5f28e26620629"},
-    {file = "torchvision-0.18.1+cpu-cp312-cp312-win_amd64.whl", hash = "sha256:39b9e63cb11ca3dba2ef0a05e000d7d196f66e7be641a5fc48d4ed6c93d898e7"},
-    {file = "torchvision-0.18.1+cpu-cp38-cp38-linux_x86_64.whl", hash = "sha256:0712fb8c5261488afbb859b8107f97309c9d80cb2fe595293b8ec453537dd042"},
-    {file = "torchvision-0.18.1+cpu-cp38-cp38-win_amd64.whl", hash = "sha256:96bfae7087dbdaee6b486814e1ec9689f69a83451ef495f14cdf2024af00819b"},
-    {file = "torchvision-0.18.1+cpu-cp39-cp39-linux_x86_64.whl", hash = "sha256:56563d0cae75ec2d7052417a481777a070038f85f9cd1421a90039aaa9feb2b7"},
-    {file = "torchvision-0.18.1+cpu-cp39-cp39-win_amd64.whl", hash = "sha256:3dd65867b5efc7741fb90d390139f192089ce59f9fce399c275e809cb85de6de"},
-]
-
-[package.dependencies]
-numpy = "*"
-pillow = ">=5.3.0,<8.3.dev0 || >=8.4.dev0"
-torch = "2.3.1"
-
-[package.extras]
-scipy = ["scipy"]
-
-[package.source]
-type = "legacy"
-url = "https://download.pytorch.org/whl/cpu"
-reference = "pytorch-cpu"
 
 [[package]]
 name = "tqdm"
@@ -3414,8 +3318,9 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 
 [extras]
 plugins = []
+torch = []
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.12"
-content-hash = "12ca81a1aef11256f248841c5fd24cd5edafbf1d867dc9098bf1b1a313702b52"
+content-hash = "f90f0a2469d3e1942309b06dbe7795f91e29970017db52b6f677940bd01c706f"
