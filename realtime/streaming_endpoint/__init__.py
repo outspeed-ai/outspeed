@@ -25,13 +25,6 @@ def streaming_endpoint():
             audio_output_frame_processor = AudioOutputFrameProcessor()
             text_output_processor = TextFrameOutputProcessor()
 
-            webrtc_app = create_and_run_server()
-
-            HOSTNAME = "0.0.0.0"
-            PORT = int(os.getenv("HTTP_PORT", 8080))
-            server = uvicorn.Server(config=uvicorn.Config(webrtc_app, host=HOSTNAME, port=PORT, log_level="info"))
-            asyncio.create_task(server.serve())
-
             while True:
                 try:
                     audio_input_q = None
@@ -66,6 +59,19 @@ def streaming_endpoint():
                             vq = s
                         elif isinstance(s, TextStream):
                             tq = s
+
+                    input_audio = audio_input_q != None
+                    input_video = video_input_q != None
+                    output_audio = aq != None
+                    output_video = vq != None
+                    webrtc_app = create_and_run_server(input_audio, input_video, output_audio, output_video)
+
+                    HOSTNAME = "0.0.0.0"
+                    PORT = int(os.getenv("HTTP_PORT", 8080))
+                    server = uvicorn.Server(
+                        config=uvicorn.Config(webrtc_app, host=HOSTNAME, port=PORT, log_level="info")
+                    )
+                    asyncio.create_task(server.serve())
 
                     async def audio_frame_callback():
                         while not audio_output_frame_processor.track:

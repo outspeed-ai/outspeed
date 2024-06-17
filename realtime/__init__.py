@@ -9,6 +9,7 @@ try:
     from .app import App  # noqa: F401
     from .function import function  # noqa: F401
     from .streaming_endpoint import streaming_endpoint  # noqa: F401
+    from .web_endpoint import web_endpoint  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -17,4 +18,4 @@ except Exception:
     print()
     raise
 
-__all__ = ["function", "streaming_endpoint", "App"]
+__all__ = ["function", "streaming_endpoint", "App", "web_endpoint"]

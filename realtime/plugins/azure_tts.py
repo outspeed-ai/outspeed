@@ -138,7 +138,7 @@ class AzureTTS(Plugin):
                     lambda: self._speech_synthesizer.speak_text_async(text_chunk).get(),
                 )
                 audio_data = result.audio_data
-                print("audio_data", len(audio_data))
+                logger.info("Azure TTS TTFB: %s", time.time() - start_time)
                 await self.output_queue.put(audio_data)
                 await self.viseme_stream.put(json.dumps(self._viseme_data))
                 self._viseme_data["mouthCues"] = []

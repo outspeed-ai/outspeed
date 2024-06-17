@@ -3,6 +3,7 @@ import dill
 import requests
 import os
 
+
 @click.group()
 def cli():
     """A CLI tool for deploying serialized Python files."""
@@ -20,8 +21,8 @@ def cli():
 @click.option("--api-key", required=False, help="API key of the sending user")
 def deploy(file_path, endpoint, api_key):
     """Serializes a .py file and sends it to the specified backend server."""
-    BASE_URL = "http://infra.getadapt.ai"
-    endpoint = os.getenv("ADAPT_ENDPOINT") or endpoint or f'{BASE_URL}/deploy'
+    BASE_URL = "https://infra.getadapt.ai"
+    endpoint = os.getenv("ADAPT_ENDPOINT") or endpoint or f"{BASE_URL}/deploy"
     api_key = os.getenv("ADAPT_API_KEY") or api_key
     try:
         with open(file_path, "rb") as file:

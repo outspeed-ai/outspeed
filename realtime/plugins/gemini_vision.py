@@ -60,9 +60,7 @@ class GeminiVision(VisionPlugin):
         while True:
             if self._auto_respond:
                 try:
-                    prompt = await asyncio.wait_for(
-                        self.text_input_queue.get(), timeout=0.2
-                    )
+                    prompt = await asyncio.wait_for(self.text_input_queue.get(), timeout=0.2)
                 except asyncio.TimeoutError:
                     if (
                         self._time_last_response is not None
@@ -104,9 +102,7 @@ class GeminiVision(VisionPlugin):
                 response = await self._client.generate_content_async(
                     self._history,
                     stream=True,
-                    generation_config=genai.types.GenerationConfig(
-                        max_output_tokens=75, temperature=self._temperature
-                    ),
+                    generation_config=genai.types.GenerationConfig(max_output_tokens=75, temperature=self._temperature),
                     safety_settings=self._safety_settings,
                 )
             except Exception as e:
@@ -144,9 +140,7 @@ class GeminiVision(VisionPlugin):
             self._generating = False
             await self.output_queue.put(None)
 
-    async def run(
-        self, text_input_queue: asyncio.Queue, image_input_queue: asyncio.Queue
-    ) -> asyncio.Queue:
+    async def run(self, text_input_queue: asyncio.Queue, image_input_queue: asyncio.Queue) -> asyncio.Queue:
         self.text_input_queue = text_input_queue
         self.image_input_queue = image_input_queue
         self._tasks = [asyncio.create_task(self._stream_chat_completions())]
