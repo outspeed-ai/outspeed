@@ -51,3 +51,10 @@ If the container is not already running, you have to run on container start:
 poetry install --only main
 ```
 
+### Publishing
+
+```
+poetry build
+poetry publish
+```
+
