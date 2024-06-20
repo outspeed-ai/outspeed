@@ -144,7 +144,7 @@ def streaming_endpoint():
 
                     async def process_video_output():
                         _start = None
-                        data_time = 0.020
+                        data_time = 0.010
                         while True:
                             if not vq:
                                 break

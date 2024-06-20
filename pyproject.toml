@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "realtime-client"
-version = "0.1.104"
+version = "0.1.105"
 description = ""
 authors = ["Adapt <hello@getadapt.ai>"]
 readme = "README.md"
@@ -35,6 +35,7 @@ pillow = "^10.3.0"
 numpy = "^1.26.4"
 opencv-python-headless = "^4.10.0.82"
 azure-cognitiveservices-speech = "^1.37.0"
+google-cloud-vision = "^3.7.2"
 
 [tool.poetry.group.torch]
 optional = true
