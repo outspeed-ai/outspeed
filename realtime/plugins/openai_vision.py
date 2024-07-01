@@ -8,6 +8,7 @@ import time
 from openai import AsyncOpenAI
 
 from realtime.plugins.vision_plugin import VisionPlugin
+from realtime.streams import TextStream, VideoStream
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class OpenAIVision(VisionPlugin):
         self._auto_respond = auto_respond
         self.wait_for_first_user_response = wait_for_first_user_response
         self._time_last_response = None
-        self.chat_history_queue = asyncio.Queue()
+        self.chat_history_queue = TextStream()
         self._key_frame_threshold = key_frame_threshold
 
     async def _stream_chat_completions(self):
@@ -115,7 +116,7 @@ class OpenAIVision(VisionPlugin):
             self._generating = False
             await self.output_queue.put(None)
 
-    async def run(self, text_input_queue: asyncio.Queue, image_input_queue: asyncio.Queue) -> asyncio.Queue:
+    async def run(self, text_input_queue: TextStream, image_input_queue: VideoStream) -> TextStream:
         self.text_input_queue = text_input_queue
         self.image_input_queue = image_input_queue
         self._tasks = [asyncio.create_task(self._stream_chat_completions()), asyncio.create_task(self.process_video())]

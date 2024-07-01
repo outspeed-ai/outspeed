@@ -7,7 +7,7 @@ import google.generativeai as genai
 import PIL.PngImagePlugin  # Not used but needed to make Gemini API work with PIL  # noqa: F401
 
 from realtime.plugins.vision_plugin import VisionPlugin
-from realtime.streams import TextStream
+from realtime.streams import TextStream, VideoStream
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class GeminiVision(VisionPlugin):
             self._generating = False
             await self.output_queue.put(None)
 
-    async def run(self, text_input_queue: asyncio.Queue, image_input_queue: asyncio.Queue) -> asyncio.Queue:
+    async def run(self, text_input_queue: TextStream, image_input_queue: VideoStream) -> TextStream:
         self.text_input_queue = text_input_queue
         self.image_input_queue = image_input_queue
         self._tasks = [asyncio.create_task(self._stream_chat_completions())]
