@@ -83,95 +83,104 @@ def streaming_endpoint():
                 asyncio.create_task(server.serve())
 
                 async def audio_frame_callback():
-                    while not audio_output_frame_processor.track:
-                        await asyncio.sleep(0.2)
-                    audio_track = audio_output_frame_processor.track
-                    while True:
-                        try:
+                    try:
+                        while not audio_output_frame_processor.track:
+                            await asyncio.sleep(0.2)
+                        audio_track = audio_output_frame_processor.track
+                        while True:
                             frame = await audio_track.recv()
                             await audio_input_q.put(frame)
-                        except Exception as e:
-                            print("Error in audio_frame_callback: ", e)
-                            raise asyncio.CancelledError
+                    except Exception as e:
+                        print("Error in audio_frame_callback: ", e)
+                        raise asyncio.CancelledError
 
                 async def video_frame_callback():
-                    while not video_output_frame_processor.track:
-                        await asyncio.sleep(0.2)
-                    video_track = video_output_frame_processor.track
-                    while True:
-                        try:
+                    try:
+                        while not video_output_frame_processor.track:
+                            await asyncio.sleep(0.2)
+                        video_track = video_output_frame_processor.track
+                        while True:
                             frame = await video_track.recv()
                             await video_input_q.put(frame)
-                        except Exception as e:
-                            print("Error in video_frame_callback: ", e)
-                            raise asyncio.CancelledError
+                    except Exception as e:
+                        print("Error in video_frame_callback: ", e)
+                        raise asyncio.CancelledError
 
                 async def text_frame_callback():
-                    while not text_output_processor.track:
-                        await asyncio.sleep(0.2)
-                    while True:
-                        try:
+                    try:
+                        while not text_output_processor.track:
+                            await asyncio.sleep(0.2)
+                        while True:
                             text = await text_output_processor.recv()
+                            print("text_frame_callback: ", text)
                             await text_input_q.put(text)
-                        except Exception as e:
-                            print("Error in text_frame_callback: ", e)
-                            raise asyncio.CancelledError
+                    except Exception as e:
+                        print("Error in text_frame_callback: ", e)
+                        raise asyncio.CancelledError
 
                 async def process_audio_output():
                     _start = None
                     data_time = 0.020
-                    while True:
-                        if not aq:
-                            break
-                        if _start is None:
-                            _start = time.time() + data_time
-                        else:
-                            wait = _start - time.time() - 0.005
-                            _start += data_time
-                            if wait > 0:
-                                await asyncio.sleep(wait)
-                        try:
-                            audio_frame = aq.get_nowait()
+                    try:
+                        while True:
+                            if not aq:
+                                break
+                            if _start is None:
+                                _start = time.time() + data_time
+                            else:
+                                wait = _start - time.time() - 0.005
+                                _start += data_time
+                                if wait > 0:
+                                    await asyncio.sleep(wait)
+                            try:
+                                audio_frame = aq.get_nowait()
+                            except asyncio.QueueEmpty:
+                                continue
                             if audio_frame is None:
                                 continue
                             await audio_output_frame_processor.put_frame(audio_frame)
-                        except:
-                            pass  # Ignore Empty exception
-
-                        # await audio_output_frame_processor.put_frame(generate_silence_packet())
+                    except Exception as e:
+                        print("Error in process_audio_output: ", e)
+                        pass  # Ignore Empty exception
 
                 async def process_video_output():
                     _start = None
                     data_time = 0.010
-                    while True:
-                        if not vq:
-                            break
-                        if _start is None:
-                            _start = time.time() + data_time
-                        else:
-                            wait = _start - time.time() - 0.005
-                            _start += data_time
-                            if wait > 0:
-                                await asyncio.sleep(wait)
-                        try:
-                            video_frame = vq.get_nowait()
+                    try:
+                        while True:
+                            if not vq:
+                                break
+                            if _start is None:
+                                _start = time.time() + data_time
+                            else:
+                                wait = _start - time.time() - 0.005
+                                _start += data_time
+                                if wait > 0:
+                                    await asyncio.sleep(wait)
+                            try:
+                                video_frame = vq.get_nowait()
+                            except asyncio.QueueEmpty:
+                                continue
                             if video_frame is None:
                                 continue
                             await video_output_frame_processor.put_frame(video_frame)
-                        except:
-                            pass  # Ignore Empty exception
+                    except Exception as e:
+                        print("Error in process_video_output: ", e)
+                        pass  # Ignore Empty exception
 
                 async def process_text_output():
-                    while True:
-                        if not tq:
-                            break
-                        try:
+                    try:
+                        while True:
+                            if not tq:
+                                break
                             text_frame = await tq.get()
+                            print("process_text_output: ", text_frame)
                             if text_frame is None:
                                 continue
                             await text_output_processor.send(text_frame)
-                        except:
-                            pass  # Ignore Empty exception
+                    except Exception as e:
+                        print("Error in process_text_output: ", e)
+                        pass  # Ignore Empty exception
 
                 tasks = [
                     asyncio.create_task(process_audio_output()),
@@ -185,16 +194,22 @@ def streaming_endpoint():
                 if text_input_q:
                     tasks.append(asyncio.create_task(text_frame_callback()))
                 await asyncio.gather(*tasks)
-            except asyncio.CancelledError:
+            except Exception as e:
                 VideoOutputFrameProcessor.track = None
                 AudioOutputFrameProcessor.track = None
                 TextFrameOutputProcessor.track = None
                 if instance:
                     await instance.teardown()
+                logging.info("Received exit, stopping bot")
+                loop = asyncio.get_event_loop()
+                tasks = asyncio.all_tasks(loop)
                 for task in tasks:
                     task.cancel()
-            except Exception as e:
-                logger.error(f"Error in streaming endpoint: {e}")
+                    try:
+                        loop.run_until_complete(task)
+                    except asyncio.CancelledError:
+                        logging.info("Task was cancelled")
+                loop.close()
 
         return wrapper
 

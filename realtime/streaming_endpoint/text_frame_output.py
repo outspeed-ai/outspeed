@@ -12,7 +12,7 @@ class TextFrameOutputProcessor:
             TextFrameOutputProcessor.track = track
 
     async def send(self, text):
-        await TextFrameOutputProcessor.track.send(text)
+        TextFrameOutputProcessor.track.send(text)
 
     def put_text(self, text):
         TextFrameOutputProcessor.text_received_q.put_nowait(text)
