@@ -90,8 +90,8 @@ def streaming_endpoint():
                         try:
                             frame = await audio_track.recv()
                             await audio_input_q.put(frame)
-                        except:
-                            print("Error in audio_frame_callback")
+                        except Exception as e:
+                            print("Error in audio_frame_callback: ", e)
                             raise asyncio.CancelledError
 
                 async def video_frame_callback():
@@ -102,20 +102,19 @@ def streaming_endpoint():
                         try:
                             frame = await video_track.recv()
                             await video_input_q.put(frame)
-                        except:
-                            print("Error in video_frame_callback")
+                        except Exception as e:
+                            print("Error in video_frame_callback: ", e)
                             raise asyncio.CancelledError
 
                 async def text_frame_callback():
                     while not text_output_processor.track:
                         await asyncio.sleep(0.2)
-                    text_track = text_output_processor.track
                     while True:
                         try:
-                            text = await text_track.recv()
+                            text = await text_output_processor.recv()
                             await text_input_q.put(text)
-                        except:
-                            print("Error in text_frame_callback")
+                        except Exception as e:
+                            print("Error in text_frame_callback: ", e)
                             raise asyncio.CancelledError
 
                 async def process_audio_output():
