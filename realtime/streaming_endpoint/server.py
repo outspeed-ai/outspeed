@@ -72,6 +72,10 @@ def offer(audio_driver, video_driver, text_driver):
     return handshake
 
 
+async def get_active_connection_ids():
+    return [str(pc) for pc in pcs]
+
+
 @asynccontextmanager
 async def on_shutdown(app: FastAPI):
     yield
@@ -86,4 +90,5 @@ def create_and_run_server(audio_driver, video_driver, text_driver):
     webrtc_app = FastAPI(lifespan=on_shutdown)
     webrtc_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     webrtc_app.add_api_route("/offer", offer(audio_driver, video_driver, text_driver), methods=["POST"])
+    webrtc_app.add_api_route("/connections", get_active_connection_ids, methods=["GET"])
     return webrtc_app
