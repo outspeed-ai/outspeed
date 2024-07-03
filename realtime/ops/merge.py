@@ -19,12 +19,11 @@ def merge(input_queues: List[Stream]):
     else:
         raise ValueError(f"Invalid input queue type: {type(input_queues[0])}")
 
+    async def get(queue):
+        while True:
+            item = await queue.get()
+            output_queue.put_nowait(item)
+
     for q in input_queues:
-
-        async def get():
-            while True:
-                item = await q.get()
-                output_queue.put_nowait(item)
-
-        asyncio.create_task(get())
+        asyncio.create_task(get(q))
     return output_queue

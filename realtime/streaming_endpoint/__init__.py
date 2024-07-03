@@ -8,10 +8,10 @@ import time
 
 import uvicorn
 
-from realtime.streaming_endpoint.audio_frame_output import AudioOutputFrameProcessor
+from realtime.streaming_endpoint.AudioRTCDriver import AudioRTCDriver
 from realtime.streaming_endpoint.server import create_and_run_server
-from realtime.streaming_endpoint.text_frame_output import TextFrameOutputProcessor
-from realtime.streaming_endpoint.video_frame_output import VideoOutputFrameProcessor
+from realtime.streaming_endpoint.TextRTCDriver import TextRTCDriver
+from realtime.streaming_endpoint.VideoRTCDriver import VideoRTCDriver
 from realtime.streams import AudioStream, TextStream, VideoStream
 
 logger = logging.getLogger(__name__)
@@ -21,11 +21,6 @@ def streaming_endpoint():
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            # Add the extra argument
-            video_output_frame_processor = VideoOutputFrameProcessor()
-            audio_output_frame_processor = AudioOutputFrameProcessor()
-            text_output_processor = TextFrameOutputProcessor()
-
             try:
                 audio_input_q = None
                 video_input_q = None
@@ -60,11 +55,12 @@ def streaming_endpoint():
                     elif isinstance(s, TextStream):
                         tq = s
 
-                input_audio = audio_input_q != None
-                input_video = video_input_q != None
-                output_audio = aq != None
-                output_video = vq != None
-                webrtc_app = create_and_run_server(input_audio, input_video, output_audio, output_video)
+                video_output_frame_processor = VideoRTCDriver(video_input_q, vq)
+                audio_output_frame_processor = AudioRTCDriver(audio_input_q, aq)
+                text_output_processor = TextRTCDriver(text_input_q, tq)
+                webrtc_app = create_and_run_server(
+                    audio_output_frame_processor, video_output_frame_processor, text_output_processor
+                )
 
                 HOSTNAME = "0.0.0.0"
                 PORT = int(os.getenv("HTTP_PORT", 8080))
@@ -80,136 +76,35 @@ def streaming_endpoint():
                         ssl_certfile=os.environ["SSL_CERT_PATH"],
                     ),
                 )
-                asyncio.create_task(server.serve())
-
-                async def audio_frame_callback():
-                    try:
-                        while not audio_output_frame_processor.track:
-                            await asyncio.sleep(0.2)
-                        audio_track = audio_output_frame_processor.track
-                        while True:
-                            frame = await audio_track.recv()
-                            await audio_input_q.put(frame)
-                    except Exception as e:
-                        print("Error in audio_frame_callback: ", e)
-                        raise asyncio.CancelledError
-
-                async def video_frame_callback():
-                    try:
-                        while not video_output_frame_processor.track:
-                            await asyncio.sleep(0.2)
-                        video_track = video_output_frame_processor.track
-                        while True:
-                            frame = await video_track.recv()
-                            await video_input_q.put(frame)
-                    except Exception as e:
-                        print("Error in video_frame_callback: ", e)
-                        raise asyncio.CancelledError
-
-                async def text_frame_callback():
-                    try:
-                        while not text_output_processor.track:
-                            await asyncio.sleep(0.2)
-                        while True:
-                            text = await text_output_processor.recv()
-                            print("text_frame_callback: ", text)
-                            await text_input_q.put(text)
-                    except Exception as e:
-                        print("Error in text_frame_callback: ", e)
-                        raise asyncio.CancelledError
-
-                async def process_audio_output():
-                    _start = None
-                    data_time = 0.020
-                    try:
-                        while True:
-                            if not aq:
-                                break
-                            if _start is None:
-                                _start = time.time() + data_time
-                            else:
-                                wait = _start - time.time() - 0.005
-                                _start += data_time
-                                if wait > 0:
-                                    await asyncio.sleep(wait)
-                            try:
-                                audio_frame = aq.get_nowait()
-                            except asyncio.QueueEmpty:
-                                continue
-                            if audio_frame is None:
-                                continue
-                            await audio_output_frame_processor.put_frame(audio_frame)
-                    except Exception as e:
-                        print("Error in process_audio_output: ", e)
-                        pass  # Ignore Empty exception
-
-                async def process_video_output():
-                    _start = None
-                    data_time = 0.010
-                    try:
-                        while True:
-                            if not vq:
-                                break
-                            if _start is None:
-                                _start = time.time() + data_time
-                            else:
-                                wait = _start - time.time() - 0.005
-                                _start += data_time
-                                if wait > 0:
-                                    await asyncio.sleep(wait)
-                            try:
-                                video_frame = vq.get_nowait()
-                            except asyncio.QueueEmpty:
-                                continue
-                            if video_frame is None:
-                                continue
-                            await video_output_frame_processor.put_frame(video_frame)
-                    except Exception as e:
-                        print("Error in process_video_output: ", e)
-                        pass  # Ignore Empty exception
-
-                async def process_text_output():
-                    try:
-                        while True:
-                            if not tq:
-                                break
-                            text_frame = await tq.get()
-                            print("process_text_output: ", text_frame)
-                            if text_frame is None:
-                                continue
-                            await text_output_processor.send(text_frame)
-                    except Exception as e:
-                        print("Error in process_text_output: ", e)
-                        pass  # Ignore Empty exception
+                server_task = asyncio.create_task(server.serve())
 
                 tasks = [
-                    asyncio.create_task(process_audio_output()),
-                    asyncio.create_task(process_video_output()),
-                    asyncio.create_task(process_text_output()),
+                    asyncio.create_task(video_output_frame_processor.run_input()),
+                    asyncio.create_task(audio_output_frame_processor.run_input()),
+                    asyncio.create_task(text_output_processor.run_input()),
                 ]
-                if audio_input_q:
-                    tasks.append(asyncio.create_task(audio_frame_callback()))
-                if video_input_q:
-                    tasks.append(asyncio.create_task(video_frame_callback()))
-                if text_input_q:
-                    tasks.append(asyncio.create_task(text_frame_callback()))
                 await asyncio.gather(*tasks)
+
+            except asyncio.CancelledError:
+                print("streaming_endpoint: CancelledError")
             except Exception as e:
-                VideoOutputFrameProcessor.track = None
-                AudioOutputFrameProcessor.track = None
-                TextFrameOutputProcessor.track = None
+                print("Error in streaming_endpoint: ", e)
+            finally:
+                logging.info("Received exit, stopping bot")
                 if instance:
                     await instance.teardown()
-                logging.info("Received exit, stopping bot")
+                try:
+                    await server.shutdown()
+                except Exception as e:
+                    logging.info("Error in server.shutdown: ", e)
                 loop = asyncio.get_event_loop()
                 tasks = asyncio.all_tasks(loop)
                 for task in tasks:
                     task.cancel()
                     try:
-                        loop.run_until_complete(task)
+                        await task
                     except asyncio.CancelledError:
                         logging.info("Task was cancelled")
-                loop.close()
 
         return wrapper
 
