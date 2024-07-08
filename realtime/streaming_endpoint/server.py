@@ -73,7 +73,7 @@ def offer(audio_driver, video_driver, text_driver):
 
 
 async def get_active_connection_ids():
-    return [str(pc) for pc in pcs]
+    return {"connections": [str(pc) for pc in pcs]}
 
 
 @asynccontextmanager
