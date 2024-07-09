@@ -90,15 +90,26 @@ class AzureTTS(Plugin):
             logger.debug(f"Error while connecting to Azure synthesizer: {e}")
 
     def viseme_received_cb(self, evt: speechsdk.SessionEventArgs):
-        if len(self._viseme_data["mouthCues"]) > 0:
+        if (
+            len(self._viseme_data["mouthCues"]) > 0
+            and (evt.audio_offset) / 10000000.0 >= self._viseme_data["mouthCues"][-1]["end"]
+        ):
             self._viseme_data["mouthCues"][-1]["end"] = (evt.audio_offset) / 10000000.0
-        self._viseme_data["mouthCues"].append(
-            {
-                "value": viseme_id_to_mouth_shapes[evt.viseme_id],
-                "start": (evt.audio_offset) / 10000000.0 if len(self._viseme_data["mouthCues"]) > 0 else 0.0,
-                "end": (evt.audio_offset + 30000.0) / 10000000.0,
-            }
-        )
+            self._viseme_data["mouthCues"].append(
+                {
+                    "value": viseme_id_to_mouth_shapes[evt.viseme_id],
+                    "start": (evt.audio_offset) / 10000000.0 if len(self._viseme_data["mouthCues"]) > 0 else 0.0,
+                    "end": (evt.audio_offset + 1000000.0) / 10000000.0,
+                }
+            )
+        elif len(self._viseme_data["mouthCues"]) == 0:
+            self._viseme_data["mouthCues"].append(
+                {
+                    "value": viseme_id_to_mouth_shapes[evt.viseme_id],
+                    "start": (evt.audio_offset) / 10000000.0 if len(self._viseme_data["mouthCues"]) > 0 else 0.0,
+                    "end": (evt.audio_offset + 1000000.0) / 10000000.0,
+                }
+            )
 
     async def run(self, input_queue: TextStream) -> ByteStream:
         self.input_queue = input_queue
