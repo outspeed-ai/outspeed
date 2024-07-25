@@ -73,6 +73,7 @@ class AzureTTS(Plugin):
         self.viseme_stream = TextStream()
         self._viseme_data = {"mouthCues": []}
         self._generating = False
+        self._task = None
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=1)
 
         self._stream = stream
@@ -102,6 +103,8 @@ class AzureTTS(Plugin):
                     "end": (evt.audio_offset + 1000000.0) / 10000000.0,
                 }
             )
+            self.viseme_stream.put_nowait(json.dumps(self._viseme_data))
+
         elif len(self._viseme_data["mouthCues"]) == 0:
             self._viseme_data["mouthCues"].append(
                 {
@@ -110,6 +113,7 @@ class AzureTTS(Plugin):
                     "end": (evt.audio_offset + 1000000.0) / 10000000.0,
                 }
             )
+            self.viseme_stream.put_nowait(json.dumps(self._viseme_data))
 
     async def run(self, input_queue: TextStream) -> ByteStream:
         self.input_queue = input_queue
@@ -139,6 +143,7 @@ class AzureTTS(Plugin):
                 logger.info("Azure TTS TTFB: %s", time.time() - start_time)
                 while filled_size > 0:
                     await self.output_queue.put(audio_buffer)
+                    audio_buffer = bytes(4000)
                     filled_size = await asyncio.get_event_loop().run_in_executor(
                         self.thread_pool_executor,
                         lambda: audio_data_stream.read_data(audio_buffer),
@@ -151,13 +156,13 @@ class AzureTTS(Plugin):
                 audio_data = result.audio_data
                 logger.info("Azure TTS TTFB: %s", time.time() - start_time)
                 await self.output_queue.put(audio_data)
-                await self.viseme_stream.put(json.dumps(self._viseme_data))
-                self._viseme_data["mouthCues"] = []
+            self._viseme_data = {"mouthCues": []}
 
             self._generating = False
 
     async def close(self):
-        self._task.cancel()
+        if self._task:
+            self._task.cancel()
 
     async def _interrupt(self):
         while True:

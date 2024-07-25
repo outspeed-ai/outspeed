@@ -23,7 +23,10 @@ def deploy(file_path, endpoint, api_key):
     """Serializes a .py file and sends it to the specified backend server."""
     BASE_URL = "https://infra.getadapt.ai"
     endpoint = os.getenv("ADAPT_ENDPOINT") or endpoint or f"{BASE_URL}/deploy"
-    api_key = os.getenv("ADAPT_API_KEY") or api_key
+    api_key = api_key or os.getenv("ADAPT_API_KEY")
+    if not api_key:
+        click.echo("No API key provided. Please set the ADAPT_API_KEY environment variable or use the --api-key flag.")
+        return
     try:
         with open(file_path, "rb") as file:
             fmodule_content = file.read()

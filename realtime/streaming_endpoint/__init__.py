@@ -26,6 +26,7 @@ def streaming_endpoint():
                 video_input_q = None
                 text_input_q = None
                 instance = None
+                server = None
 
                 signature = inspect.signature(func)
                 parameters = signature.parameters
@@ -86,17 +87,21 @@ def streaming_endpoint():
                 await asyncio.gather(*tasks)
 
             except asyncio.CancelledError:
-                print("streaming_endpoint: CancelledError")
+                logging.error("streaming_endpoint: CancelledError")
             except Exception as e:
-                print("Error in streaming_endpoint: ", e)
+                logging.error("Error in streaming_endpoint: ", e)
             finally:
                 logging.info("Received exit, stopping bot")
-                if instance:
-                    await instance.teardown()
                 try:
-                    await server.shutdown()
+                    if instance:
+                        await instance.teardown()
                 except Exception as e:
-                    logging.info("Error in server.shutdown: ", e)
+                    logging.error("Error in instance.teardown: ", e)
+                try:
+                    if server:
+                        await server.shutdown()
+                except Exception as e:
+                    logging.error("Error in server.shutdown: ", e)
                 loop = asyncio.get_event_loop()
                 tasks = asyncio.all_tasks(loop)
                 for task in tasks:
