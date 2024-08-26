@@ -23,6 +23,11 @@ class Stream(asyncio.Queue):
 class AudioStream(Stream):
     type = "audio"
 
+    # TODO: Remove default sample rate
+    def __init__(self, sample_rate: int = 8000):
+        super().__init__()
+        self.sample_rate = sample_rate
+
     async def clone(self):
         """Create a copy of this queue."""
         clone = AudioStream()

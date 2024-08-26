@@ -61,7 +61,7 @@ class ElevenLabsTTS(Plugin):
         async with aiohttp.ClientSession() as self.session:
             while True:
                 text_chunk = await self.input_queue.get()
-                if text_chunk is None:
+                if text_chunk is None or text_chunk == "":
                     continue
                 self._generating = True
                 start_time = time.time()
@@ -91,7 +91,7 @@ class ElevenLabsTTS(Plugin):
                             self.output_queue.put_nowait(chunk)
                 else:
                     self.output_queue.put_nowait(await r.read())
-
+                self.output_queue.put_nowait(None)
                 self._generating = False
 
     async def close(self):

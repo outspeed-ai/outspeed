@@ -7,14 +7,13 @@ from typing import Tuple
 from openai import AsyncOpenAI
 
 from realtime.plugins.base_plugin import Plugin
-
-from realtime.streams import AudioStream, VideoStream, Stream, TextStream, ByteStream
+from realtime.streams import TextStream
 
 
 class FireworksLLM(Plugin):
     def __init__(
         self,
-        model: str = "accounts/fireworks/models/llama-v2-7b-chat",
+        model: str = "accounts/fireworks/models/llama-v3p1-8b-instruct",
         api_key=None,
         base_url=None,
         system_prompt=None,

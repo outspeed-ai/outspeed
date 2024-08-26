@@ -23,6 +23,7 @@ try:
     from .function import function  # noqa: F401
     from .streaming_endpoint import streaming_endpoint  # noqa: F401
     from .web_endpoint import web_endpoint  # noqa: F401
+    from .websocket import websocket  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -31,4 +32,4 @@ except Exception:
     print()
     raise
 
-__all__ = ["function", "streaming_endpoint", "App", "web_endpoint"]
+__all__ = ["function", "streaming_endpoint", "App", "web_endpoint", "websocket"]

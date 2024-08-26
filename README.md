@@ -9,7 +9,6 @@ pip install realtime-client
 This would install the core `realtime-client` package.
 You can read [docs](http://docs.getadapt.ai) to get started.
 
-
 ### Usage
 
 You can read the [docs](http://docs.getadapt.ai) to learn more about the SDK.
@@ -22,7 +21,6 @@ realtime deploy --api-key=<your-api-key> functions.py
 ```
 
 [Contact us](mailto:contact@getadapt.ai) to get an API key and deploy.
-
 
 Once deployed, you can use the playground in the examples repo to test the deployed code.
 
@@ -54,7 +52,10 @@ poetry install --only main
 ### Publishing
 
 ```
+poetry config pypi-token.pypi your-api-token
+```
+
+```
 poetry build
 poetry publish
 ```
-

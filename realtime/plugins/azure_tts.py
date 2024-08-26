@@ -1,6 +1,6 @@
-from concurrent.futures import ThreadPoolExecutor
 import faulthandler
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 faulthandler.enable()
 
@@ -10,15 +10,17 @@ import logging
 import os
 import time
 
-import aiohttp
+import azure.cognitiveservices.speech as speechsdk
 
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import ByteStream, TextStream
-import azure.cognitiveservices.speech as speechsdk
 
 logger = logging.getLogger(__name__)
 
+# https://learn.microsoft.com/en-us/python/api/azure-cognitiveservices-speech/azure.cognitiveservices.speech.speechsynthesisvisemeeventargs?view=azure-python#azure-cognitiveservices-speech-speechsynthesisvisemeeventargs-audio-offset
+AUDIO_OFFSET_TICKS_PER_SECOND = 1e7
 
+# TODO: deprecate dictionary. keeping it for now for backwards compatibility
 viseme_id_to_mouth_shapes = {
     0: "X",
     1: "D",
@@ -90,27 +92,32 @@ class AzureTTS(Plugin):
         except Exception as e:
             logger.debug(f"Error while connecting to Azure synthesizer: {e}")
 
-    def viseme_received_cb(self, evt: speechsdk.SessionEventArgs):
-        if (
-            len(self._viseme_data["mouthCues"]) > 0
-            and (evt.audio_offset) / 10000000.0 >= self._viseme_data["mouthCues"][-1]["end"]
-        ):
-            self._viseme_data["mouthCues"][-1]["end"] = (evt.audio_offset) / 10000000.0
+    def viseme_received_cb(self, evt: speechsdk.SpeechSynthesisVisemeEventArgs):
+        if len(self._viseme_data["mouthCues"]) > 0:
+            self._viseme_data["mouthCues"][-1]["end"] = (evt.audio_offset) / AUDIO_OFFSET_TICKS_PER_SECOND
+            # TODO: deprecate value key. keeping it for now for backwards compatibility
             self._viseme_data["mouthCues"].append(
                 {
                     "value": viseme_id_to_mouth_shapes[evt.viseme_id],
-                    "start": (evt.audio_offset) / 10000000.0 if len(self._viseme_data["mouthCues"]) > 0 else 0.0,
-                    "end": (evt.audio_offset + 1000000.0) / 10000000.0,
+                    "azure_viseme_id": evt.viseme_id,
+                    "start": (evt.audio_offset) / AUDIO_OFFSET_TICKS_PER_SECOND
+                    if len(self._viseme_data["mouthCues"]) > 0
+                    else 0.0,
+                    "end": (evt.audio_offset + AUDIO_OFFSET_TICKS_PER_SECOND) / AUDIO_OFFSET_TICKS_PER_SECOND,
                 }
             )
             self.viseme_stream.put_nowait(json.dumps(self._viseme_data))
 
-        elif len(self._viseme_data["mouthCues"]) == 0:
+        else:
+            # TODO: deprecate value key. keeping it for now for backwards compatibility
             self._viseme_data["mouthCues"].append(
                 {
                     "value": viseme_id_to_mouth_shapes[evt.viseme_id],
-                    "start": (evt.audio_offset) / 10000000.0 if len(self._viseme_data["mouthCues"]) > 0 else 0.0,
-                    "end": (evt.audio_offset + 1000000.0) / 10000000.0,
+                    "azure_viseme_id": evt.viseme_id,
+                    "start": (evt.audio_offset) / AUDIO_OFFSET_TICKS_PER_SECOND
+                    if len(self._viseme_data["mouthCues"]) > 0
+                    else 0.0,
+                    "end": (evt.audio_offset + AUDIO_OFFSET_TICKS_PER_SECOND) / AUDIO_OFFSET_TICKS_PER_SECOND,
                 }
             )
             self.viseme_stream.put_nowait(json.dumps(self._viseme_data))
@@ -123,7 +130,7 @@ class AzureTTS(Plugin):
     async def synthesize_speech(self):
         while True:
             text_chunk = await self.input_queue.get()
-            if text_chunk is None:
+            if text_chunk is None or text_chunk == "":
                 continue
             self._generating = True
             start_time = time.time()
@@ -156,6 +163,7 @@ class AzureTTS(Plugin):
                 audio_data = result.audio_data
                 logger.info("Azure TTS TTFB: %s", time.time() - start_time)
                 await self.output_queue.put(audio_data)
+            await self.output_queue.put(None)
             self._viseme_data = {"mouthCues": []}
 
             self._generating = False
