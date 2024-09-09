@@ -11,7 +11,8 @@ import websockets
 
 from realtime.data import AudioData
 from realtime.plugins.base_plugin import Plugin
-from realtime.streams import AudioStream, ByteStream, TextStream
+from realtime.streams import AudioStream, ByteStream, TextStream, VADStream
+from realtime.utils.vad import VADState
 from realtime.utils import tracing
 
 
@@ -108,13 +109,11 @@ class CartesiaTTS(Plugin):
 
         async def send_text():
             """Send text chunks to the Cartesia API for synthesis."""
-            first_chunk = True
             try:
                 while True:
                     text_chunk = await self.input_queue.get()
-                    if first_chunk:
+                    if not self._ws:
                         await self.connect_websocket()
-                        first_chunk = False
                     if text_chunk is None or text_chunk == "":
                         if self._current_context_id is None:
                             continue
@@ -221,22 +220,31 @@ class CartesiaTTS(Plugin):
         Cancels ongoing TTS generation and clears the output queue.
         """
         while True:
-            user_speaking = await self.interrupt_queue.get()
-            if self._generating and user_speaking:
+            vad_state: VADState = await self.interrupt_queue.get()
+            if self._generating and vad_state == VADState.SPEAKING:
                 if self._task:
                     self._task.cancel()
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
                 logging.info("Done cancelling TTS")
                 self._generating = False
                 self._task = asyncio.create_task(self.synthesize_speech())
 
-    async def set_interrupt(self, interrupt_queue: asyncio.Queue):
+    async def set_interrupt_stream(self, interrupt_stream: VADStream):
         """
         Set up the interrupt queue and start the interrupt handling task.
 
         Args:
-            interrupt_queue (asyncio.Queue): The queue for receiving interrupt signals.
+            interrupt_stream (VADStream): The stream for receiving interrupt signals.
         """
-        self.interrupt_queue = interrupt_queue
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
         self._interrupt_task = asyncio.create_task(self._interrupt())
