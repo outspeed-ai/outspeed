@@ -5,7 +5,7 @@ import threading
 from realtime.data import AudioData
 from realtime.plugins.base_plugin import Plugin
 from realtime.plugins.VAD.silero_model import SileroVADModel
-from realtime.streams import AudioStream, TextStream
+from realtime.streams import AudioStream, VADStream
 from realtime.utils.audio import calculate_audio_volume, exp_smoothing
 from realtime.utils.vad import VADState
 
@@ -26,7 +26,7 @@ class SileroVAD(Plugin):
         self._activation_threshold = activation_threshold
 
         self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-        self.output_queue = TextStream()
+        self.output_queue = VADStream()
         self.user_speaking = False
 
         self._vad_buffer = b""
@@ -50,7 +50,7 @@ class SileroVAD(Plugin):
             f"Initialized SileroVAD with sample rate: {sample_rate}, activation threshold: {activation_threshold}, min volume: {min_volume}"
         )
 
-    async def run(self, input_queue: AudioStream) -> TextStream:
+    def run(self, input_queue: AudioStream) -> VADStream:
         self.input_queue = input_queue
         self._vad_thread = threading.Thread(target=self.execute_vad, daemon=True)
         self._vad_thread.start()

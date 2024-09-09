@@ -236,7 +236,7 @@ class CartesiaTTS(Plugin):
                 self._generating = False
                 self._task = asyncio.create_task(self.synthesize_speech())
 
-    async def set_interrupt_stream(self, interrupt_stream: VADStream):
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
         """
         Set up the interrupt queue and start the interrupt handling task.
 

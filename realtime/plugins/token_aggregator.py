@@ -99,7 +99,7 @@ class TokenAggregator(Plugin):
                 logging.info("Done cancelling Token Aggregator")
                 self._task = asyncio.create_task(self._aggregate_tokens())
 
-    async def set_interrupt_stream(self, interrupt_stream: VADStream) -> None:
+    def set_interrupt_stream(self, interrupt_stream: VADStream) -> None:
         """
         Set up the interrupt handling mechanism.
 
