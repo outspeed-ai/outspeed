@@ -1,15 +1,14 @@
 import asyncio
-import os
 import time
 from collections import deque
 
 from realtime.plugins.base_plugin import Plugin
+from realtime.streams import TextStream
 from realtime.utils.images import (
     convert_image_to_url,
     convert_yuv420_to_pil,
     image_hamming_distance,
 )
-from realtime.streams import TextStream
 
 
 class VisionPlugin(Plugin):

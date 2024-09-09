@@ -1,14 +1,13 @@
 import asyncio
-import os
 import time
 from collections import deque
 
 from realtime.plugins.base_plugin import Plugin
+from realtime.streams import VideoStream
 from realtime.utils.images import (
     convert_yuv420_to_pil,
     image_hamming_distance,
 )
-from realtime.streams import VideoStream
 
 
 class KeyFrameDetector(Plugin):

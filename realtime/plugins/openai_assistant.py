@@ -7,6 +7,7 @@ import time
 from openai import AsyncAssistantEventHandler, AsyncOpenAI
 from typing_extensions import override
 
+from typing import Optional
 from realtime.plugins.vision_plugin import VisionPlugin
 from realtime.utils.images import convert_yuv420_to_pil
 
@@ -30,10 +31,10 @@ class OpenAIVisionAssistant(VisionPlugin):
     def __init__(
         self,
         model: str = "gpt-4-turbo",
-        api_key: str | None = None,
-        base_url: str | None = None,
-        system_prompt: str | None = None,
-        auto_respond: int | None = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        auto_respond: Optional[int] = None,
         temperature: float = 1.0,
         wait_for_first_user_response: bool = False,
         key_frame_threshold: float = 0.4,

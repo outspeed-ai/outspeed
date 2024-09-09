@@ -1,7 +1,9 @@
 import asyncio
 import time
-from av import VideoFrame
+
 from aiortc import MediaStreamTrack
+
+from realtime.data import ImageData
 
 
 class VideoRTCDriver(MediaStreamTrack):
@@ -11,19 +13,26 @@ class VideoRTCDriver(MediaStreamTrack):
         super().__init__()
         self.video_output_q = video_output_q
         self.video_input_q = video_input_q
+        self._video_samples = 0
         self._track = None
         self._start = None
 
     async def recv(self):
-        data_time = 0.010
+        video_data = await self.video_output_q.get()
+        if video_data is None:
+            return None
+        video_frame = video_data.get_frame()
+        self._video_samples = max(self._video_samples, video_frame.pts)
+        video_frame.pts = self._video_samples
+        self._video_samples += 1.0 / video_frame.time_base
+        data_time = video_data.get_duration_seconds()
         if self._start is None:
             self._start = time.time() + data_time
         else:
-            wait = self._start - time.time() - 0.005
-            self._start = time.time() + data_time
+            wait = self._start - time.time() - data_time
             if wait > 0:
                 await asyncio.sleep(wait)
-        video_frame = await self.video_output_q.get()
+            self._start = max(self._start, time.time()) + data_time
         return video_frame
 
     def add_track(self, track):
@@ -37,7 +46,7 @@ class VideoRTCDriver(MediaStreamTrack):
                 await asyncio.sleep(0.2)
             while True:
                 frame = await self._track.recv()
-                await self.video_input_q.put(frame)
+                await self.video_input_q.put(ImageData(frame))
         except Exception as e:
             print("Error in video_frame_callback: ", e)
             raise asyncio.CancelledError

@@ -1,65 +1,126 @@
 import asyncio
-from typing import List
+from typing import Any, List
 
 
 class Stream(asyncio.Queue):
-    """An asynchronous queue where objects added to it are also added to its copies."""
+    """
+    An asynchronous queue where objects added to it are also added to its copies.
 
-    def __init__(self):
+    This class extends asyncio.Queue to provide a mechanism for creating and managing
+    multiple copies (clones) of the stream, where any item added to the original stream
+    is automatically added to all of its clones.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the Stream with an empty list of clones."""
         super().__init__()
         self._clones: List[Stream] = []
 
-    async def put(self, item):
-        """Put an item in all queues of all instances."""
+    async def put(self, item: Any) -> None:
+        """
+        Put an item in all queues of all instances asynchronously.
+
+        This method is a wrapper around put_nowait to maintain consistency
+        with the asyncio.Queue interface.
+
+        Args:
+            item (Any): The item to be added to the queue and all its clones.
+        """
         self.put_nowait(item)
 
-    def put_nowait(self, item):
-        """Put an item in all queues of all instances."""
+    def put_nowait(self, item: Any) -> None:
+        """
+        Put an item in all queues of all instances immediately.
+
+        This method adds the item to the current queue and all of its clones
+        without waiting for an available slot.
+
+        Args:
+            item (Any): The item to be added to the queue and all its clones.
+        """
         super().put_nowait(item)
         for clone in self._clones:
             clone.put_nowait(item)
 
 
 class AudioStream(Stream):
-    type = "audio"
+    """
+    A specialized Stream for audio data.
 
-    # TODO: Remove default sample rate
-    def __init__(self, sample_rate: int = 8000):
+    This class extends the Stream class to handle audio-specific properties
+    such as sample rate.
+    """
+
+    type: str = "audio"
+
+    def __init__(self, sample_rate: int = 8000) -> None:
+        """
+        Initialize the AudioStream with a given sample rate.
+
+        Args:
+            sample_rate (int, optional): The sample rate of the audio stream. Defaults to 8000.
+        """
         super().__init__()
-        self.sample_rate = sample_rate
+        self.sample_rate: int = sample_rate
 
-    async def clone(self):
-        """Create a copy of this queue."""
-        clone = AudioStream()
+    def clone(self) -> "AudioStream":
+        """
+        Create a copy of this AudioStream.
+
+        Returns:
+            AudioStream: A new AudioStream instance that is a clone of the current one.
+        """
+        clone = AudioStream(sample_rate=self.sample_rate)
         self._clones.append(clone)
         return clone
 
 
 class VideoStream(Stream):
-    type = "video"
+    """A specialized Stream for video data."""
 
-    async def clone(self):
-        """Create a copy of this queue."""
+    type: str = "video"
+
+    def clone(self) -> "VideoStream":
+        """
+        Create a copy of this VideoStream.
+
+        Returns:
+            VideoStream: A new VideoStream instance that is a clone of the current one.
+        """
         clone = VideoStream()
         self._clones.append(clone)
         return clone
 
 
 class TextStream(Stream):
-    type = "text"
+    """A specialized Stream for text data."""
 
-    async def clone(self):
-        """Create a copy of this queue."""
+    type: str = "text"
+
+    def clone(self) -> "TextStream":
+        """
+        Create a copy of this TextStream.
+
+        Returns:
+            TextStream: A new TextStream instance that is a clone of the current one.
+        """
         clone = TextStream()
         self._clones.append(clone)
         return clone
 
 
 class ByteStream(Stream):
-    type = "bytes"
+    """A specialized Stream for byte data."""
 
-    async def clone(self):
-        """Create a copy of this queue."""
+    type: str = "bytes"
+
+    def clone(self) -> "ByteStream":
+        """
+        Create a copy of this ByteStream.
+
+        Returns:
+            ByteStream: A new ByteStream instance that is a clone of the current one.
+        """
         clone = ByteStream()
         self._clones.append(clone)
         return clone

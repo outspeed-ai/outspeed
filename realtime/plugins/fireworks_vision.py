@@ -1,5 +1,6 @@
 import asyncio
 import time
+from typing import Optional
 
 from openai import AsyncOpenAI
 
@@ -10,10 +11,10 @@ class FireworksVision(VisionPlugin):
     def __init__(
         self,
         model: str = "accounts/fireworks/models/firellava-13b",
-        api_key: str | None = None,
-        base_url: str | None = None,
-        system_prompt: str | None = None,
-        auto_respond: int | None = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        auto_respond: Optional[int] = None,
         temperature: float = 1.0,
         wait_for_first_user_response: bool = False,
     ):

@@ -6,16 +6,15 @@ from contextlib import asynccontextmanager
 from typing import Dict
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
-from aiortc.contrib.media import MediaRelay
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException
+
+from realtime.server import RealtimeServer
 
 ROOT = os.path.dirname(__file__)
 
-logger = logging.getLogger("pc")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 pcs = set()
-# relay = MediaRelay()
 
 
 def offer(audio_driver, video_driver, text_driver):
@@ -25,6 +24,7 @@ def offer(audio_driver, video_driver, text_driver):
         pc = RTCPeerConnection()
         pc_id = "PeerConnection(%s)" % uuid.uuid4()
         pcs.add(pc)
+        RealtimeServer().add_connection()
 
         def log_info(msg, *args):
             logger.info(pc_id + " " + msg, *args)
@@ -57,16 +57,27 @@ def offer(audio_driver, video_driver, text_driver):
             elif track.kind == "video":
                 video_driver.add_track(track)
 
-        # handle offer
-        await pc.setRemoteDescription(offer)
-        if video_driver.video_output_q:
-            pc.addTrack(video_driver)
-        if audio_driver.audio_output_q:
-            pc.addTrack(audio_driver)
+        try:
+            # handle offer
+            await pc.setRemoteDescription(offer)
+            if video_driver.video_output_q:
+                pc.addTrack(video_driver)
+            if audio_driver.audio_output_q:
+                pc.addTrack(audio_driver)
 
-        # send answer
-        answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
+            # send answer
+            answer = await pc.createAnswer()
+            await pc.setLocalDescription(answer)
+        except Exception as e:
+            logger.error(
+                "Please check that the proper Audio and Video settings are enabled. Error handling offer: %s", e
+            )
+            await pc.close()
+            pcs.discard(pc)
+            raise HTTPException(
+                status_code=400,
+                detail="Please check that the proper Audio and Video settings are enabled.",
+            )
         return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
 
     return handshake
@@ -77,7 +88,7 @@ async def get_active_connection_ids():
 
 
 @asynccontextmanager
-async def on_shutdown(app: FastAPI):
+async def on_shutdown():
     yield
     # close peer connections
     logger.info("Closing peer connections")
@@ -87,8 +98,6 @@ async def on_shutdown(app: FastAPI):
 
 
 def create_and_run_server(audio_driver, video_driver, text_driver):
-    webrtc_app = FastAPI(lifespan=on_shutdown)
-    webrtc_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-    webrtc_app.add_api_route("/offer", offer(audio_driver, video_driver, text_driver), methods=["POST"])
-    webrtc_app.add_api_route("/connections", get_active_connection_ids, methods=["GET"])
-    return webrtc_app
+    fastapi_app = RealtimeServer().get_app()
+    fastapi_app.add_api_route("/offer", offer(audio_driver, video_driver, text_driver), methods=["POST"])
+    fastapi_app.add_event_handler("shutdown", on_shutdown)

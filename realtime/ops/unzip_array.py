@@ -1,5 +1,4 @@
 import asyncio
-from typing import Callable, List
 
 from realtime.streams import AudioStream, ByteStream, Stream, TextStream, VideoStream
 

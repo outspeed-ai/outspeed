@@ -35,13 +35,27 @@ def deploy(file_path, api_key, base_url):
             payload = {"module": fmodule_content, "metadata": {}}
             serialized_payload = dill.dumps(payload, recurse=True)
             headers = {"Content-Type": "application/octet-stream", "X-API-KEY": api_key}
-            response = requests.post(endpoint, data=serialized_payload, headers=headers)
-            body = response.json()
+            response = None
+            try:
+                response = requests.post(endpoint, data=serialized_payload, headers=headers)
+            except Exception as e:
+                click.echo(f"An error occurred while connecting to the server: {str(e)}")
+                click.echo(f"Base URL: {BASE_URL}, Headers: {headers}")
+                if response:
+                    click.echo(f"Response: {response.text}")
+                return
+            try:
+                body = response.json()
+            except Exception as e:
+                click.echo(f"An error occurred while parsing the response: {str(e)}")
+                click.echo(f"Response: {response.text}")
+                return
             if response.status_code == 200:
                 click.echo("Function successfully deployed!")
                 click.echo(f"Use function URL: {BASE_URL}/run/{body['functionId']} to run the function")
             else:
                 click.echo(f"Failed to deploy file. Status code: {response.status_code}")
+                click.echo(f"Response: {response.text}")
     except Exception as e:
         click.echo(f"An error occurred: {str(e)}")
 

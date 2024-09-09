@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import time
+from typing import Optional
 
 import google.generativeai as genai
 import PIL.PngImagePlugin  # Not used but needed to make Gemini API work with PIL  # noqa: F401
@@ -16,10 +17,10 @@ class GeminiVision(VisionPlugin):
     def __init__(
         self,
         model: str = "gemini-1.5-flash-latest",
-        api_key: str | None = None,
-        base_url: str | None = None,
-        system_prompt: str | None = None,
-        auto_respond: int | None = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        auto_respond: Optional[int] = None,
         temperature: float = 1.0,
         wait_for_first_user_response: bool = False,
         chat_history: bool = True,

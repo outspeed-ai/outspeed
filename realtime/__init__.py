@@ -20,8 +20,18 @@ sentry_sdk.init(
 
 try:
     from .app import App  # noqa: F401
-    from .function import function  # noqa: F401
+    from .data import AudioData, ImageData, TextData  # noqa: F401
+    from .ops.map import map  # noqa: F401
+    from .ops.merge import merge  # noqa: F401
+    from .plugins.azure_tts import AzureTTS  # noqa: F401
+    from .plugins.cartesia_tts import CartesiaTTS  # noqa: F401
+    from .plugins.deepgram_stt import DeepgramSTT  # noqa: F401
+    from .plugins.eleven_labs_tts import ElevenLabsTTS  # noqa: F401
+    from .plugins.fireworks_llm import FireworksLLM  # noqa: F401
+    from .plugins.groq_llm import GroqLLM  # noqa: F401
+    from .plugins.token_aggregator import TokenAggregator  # noqa: F401
     from .streaming_endpoint import streaming_endpoint  # noqa: F401
+    from .streams import AudioStream, TextStream, VideoStream  # noqa: F401
     from .web_endpoint import web_endpoint  # noqa: F401
     from .websocket import websocket  # noqa: F401
 except Exception:
@@ -32,4 +42,21 @@ except Exception:
     print()
     raise
 
-__all__ = ["function", "streaming_endpoint", "App", "web_endpoint", "websocket"]
+__all__ = [
+    "streaming_endpoint",
+    "App",
+    "web_endpoint",
+    "websocket",
+    "AudioData",
+    "ImageData",
+    "TextData",
+    "CartesiaTTS",
+    "DeepgramSTT",
+    "GroqLLM",
+    "TokenAggregator",
+    "map",
+    "merge",
+    "AzureTTS",
+    "ElevenLabsTTS",
+    "FireworksLLM",
+]

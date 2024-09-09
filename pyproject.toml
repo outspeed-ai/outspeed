@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "realtime-client"
-version = "0.1.125"
+version = "0.1.136"
 description = ""
 authors = ["Adapt <hello@getadapt.ai>"]
 readme = "README.md"
@@ -23,6 +23,11 @@ websockets = "^12.0"
 python-multipart = "^0.0.9"
 urllib3 = "<2.0"
 sentry-sdk = "^2.9.0"
+azure-cognitiveservices-speech = "^1.37.0"
+openai = "^1.35.10"
+pillow = "^10.3.0"
+numpy = "^1.26.4"
+scipy = "^1.13.1"
 
 [tool.poetry.group.plugins]
 optional = true
@@ -32,11 +37,7 @@ fal-client = "^0.4.0"
 elevenlabs = "^1.2.0"
 fireworks-ai = "^0.14.0"
 google-generativeai = "^0.5.3"
-openai = "^1.35.10"
-pillow = "^10.3.0"
-numpy = "^1.26.4"
 opencv-python-headless = "^4.10.0.82"
-azure-cognitiveservices-speech = "^1.37.0"
 google-cloud-vision = "^3.7.2"
 
 [tool.poetry.group.torch]
@@ -52,11 +53,8 @@ plugins = ["fal-client",
         "elevenlabs", 
         "fireworks-ai", 
         "google-generativeai", 
-        "openai", 
-        "pillow", 
-        "numpy", 
         "opencv-python-headless",
-        "azure-cognitiveservices-speech"]
+        "google-cloud-vision"]
 torch = ["torch", 
         "torchaudio", 
         "torchvision"]

@@ -2,15 +2,12 @@ import asyncio
 import json
 import logging
 import os
-import subprocess
 import time
 import wave
-
-import numpy as np
+from typing import Optional
 
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import ByteStream, TextStream
-from elevenlabs import save
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +18,7 @@ class LipSync(Plugin):
         channels: int = 1,
         sample_width: int = 2,
         sample_rate: int = 16000,
-        rhubarb_path: str | None = None,
+        rhubarb_path: Optional[str] = None,
     ):
         self._channels = channels
         self._sample_width = sample_width
