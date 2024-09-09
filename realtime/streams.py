@@ -124,3 +124,34 @@ class ByteStream(Stream):
         clone = ByteStream()
         self._clones.append(clone)
         return clone
+
+
+class VADStream(Stream):
+    """
+    A specialized Stream for audio data.
+
+    This class extends the Stream class to handle audio-specific properties
+    such as sample rate.
+    """
+
+    type: str = "vad"
+
+    def __init__(self) -> None:
+        """
+        Initialize the AudioStream with a given sample rate.
+
+        Args:
+            sample_rate (int, optional): The sample rate of the audio stream. Defaults to 8000.
+        """
+        super().__init__()
+
+    def clone(self) -> "AudioStream":
+        """
+        Create a copy of this AudioStream.
+
+        Returns:
+            AudioStream: A new AudioStream instance that is a clone of the current one.
+        """
+        clone = VADStream()
+        self._clones.append(clone)
+        return clone
