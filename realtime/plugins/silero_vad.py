@@ -1,20 +1,13 @@
 import asyncio
 import logging
 import threading
-from enum import Enum
 
 from realtime.data import AudioData
 from realtime.plugins.base_plugin import Plugin
 from realtime.plugins.VAD.silero_model import SileroVADModel
 from realtime.streams import AudioStream, TextStream
 from realtime.utils.audio import calculate_audio_volume, exp_smoothing
-
-
-class VADState(Enum):
-    QUIET = 1
-    STARTING = 2
-    SPEAKING = 3
-    STOPPING = 4
+from realtime.utils.vad import VADState
 
 
 class SileroVAD(Plugin):
