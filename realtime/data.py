@@ -118,7 +118,6 @@ class AudioData:
             ValueError: If the data format is invalid or unsupported.
         """
         if isinstance(self.data, AudioFrame):
-            self.data.pts = self.get_pts()
             return self.data
         elif isinstance(self.data, bytes):
             if len(self.data) < 2:
