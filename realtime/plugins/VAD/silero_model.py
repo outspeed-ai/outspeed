@@ -56,7 +56,6 @@ class SileroVADModel:
         logging.info(f"Initializing SileroVADModel with sample rate: {sample_rate}, channels: {num_channels}")
         # self._model, _ = torch.hub.load(repo_or_dir="snakers4/silero-vad", model="silero_vad", force_reload=False)
         self._model = load_silero_vad()
-        print(self._model)
         logging.info("Silero VAD model loaded successfully")
 
         self._last_reset_time = 0
