@@ -103,14 +103,14 @@ class FireworksLLM(Plugin):
             vad_state: VADState = await self.interrupt_queue.get()
             if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 self._task.cancel()
-                while not self.output_queue.empty():
-                    self.output_queue.get_nowait()
-                while not self.input_queue.empty():
-                    self.input_queue.get_nowait()
                 try:
                     await self._task
                 except asyncio.CancelledError:
                     pass
+                while not self.output_queue.empty():
+                    self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
                 logging.info("Done cancelling LLM")
                 self._generating = False
                 self._task = asyncio.create_task(self._stream_chat_completions())

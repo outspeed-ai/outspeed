@@ -179,12 +179,10 @@ class CartesiaTTS(Plugin):
                         total_audio_bytes += len(audio_bytes)
                         if is_first_chunk:
                             tracing.register_event(tracing.Event.TTS_TTFB)
+                            print("Sending first chunk")
                             is_first_chunk = False
                         await self.output_queue.put(
-                            AudioData(
-                                audio_bytes,
-                                sample_rate=self.output_sample_rate,
-                            )
+                            AudioData(audio_bytes, sample_rate=self.output_sample_rate, relative_start_time=0)
                         )
                     elif response["type"] == "done":
                         tracing.register_event(tracing.Event.TTS_END)
@@ -226,19 +224,19 @@ class CartesiaTTS(Plugin):
         """
         while True:
             vad_state: VADState = await self.interrupt_queue.get()
+            self._audio_context_id = None
+            self._text_context_id = None
             if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 if self._task:
                     self._task.cancel()
-                self._audio_context_id = None
-                self._text_context_id = None
-                while not self.output_queue.empty():
-                    self.output_queue.get_nowait()
-                while not self.input_queue.empty():
-                    self.input_queue.get_nowait()
                 try:
                     await self._task
                 except asyncio.CancelledError:
                     pass
+                while not self.output_queue.empty():
+                    self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
                 logging.info("Done cancelling TTS")
                 self._generating = False
                 self._task = asyncio.create_task(self.synthesize_speech())

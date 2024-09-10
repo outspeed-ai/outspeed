@@ -88,14 +88,14 @@ class TokenAggregator(Plugin):
                 self.buffer = ""
                 if self._task:
                     self._task.cancel()
-                while not self.output_queue.empty():
-                    self.output_queue.get_nowait()
-                while not self.input_queue.empty():
-                    self.input_queue.get_nowait()
                 try:
                     await self._task
                 except asyncio.CancelledError:
                     pass
+                while not self.output_queue.empty():
+                    self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
                 logging.info("Done cancelling Token Aggregator")
                 self._task = asyncio.create_task(self._aggregate_tokens())
 
