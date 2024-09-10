@@ -101,7 +101,7 @@ class FireworksLLM(Plugin):
     async def _interrupt(self):
         while True:
             vad_state: VADState = await self.interrupt_queue.get()
-            if self._generating and vad_state == VADState.SPEAKING:
+            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 self._task.cancel()
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
