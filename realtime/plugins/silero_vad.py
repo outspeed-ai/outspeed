@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import threading
+import time
 
 from realtime.data import AudioData
 from realtime.plugins.base_plugin import Plugin
@@ -45,6 +46,7 @@ class SileroVAD(Plugin):
         self._speech_duration_seconds = 0
         self._silence_duration_seconds = 0
         self._vad_state = VADState.QUIET
+        self._prev_vad_state = VADState.QUIET
 
         logging.info(
             f"Initialized SileroVAD with sample rate: {sample_rate}, activation threshold: {activation_threshold}, min volume: {min_volume}"
@@ -82,29 +84,16 @@ class SileroVAD(Plugin):
                     self._prev_volume = volume
 
                     speaking = confidence >= self._activation_threshold and volume >= self._min_volume
-                    print(f"VAD confidence: {confidence:.2f}, volume: {volume:.2f}, speaking: {speaking}")
-
-                    logging.debug(f"VAD confidence: {confidence:.2f}, volume: {volume:.2f}, speaking: {speaking}")
 
                     duration_seconds = self._get_speech_duration_seconds(audio_frames)
                     if speaking:
-                        if self._vad_state == VADState.QUIET:
+                        if self._vad_state == VADState.QUIET or self._vad_state == VADState.STOPPING:
                             self._vad_state = VADState.STARTING
-                            self._speech_duration_seconds = duration_seconds
-                        elif self._vad_state == VADState.STARTING:
-                            self._speech_duration_seconds += duration_seconds
-                        elif self._vad_state == VADState.STOPPING:
-                            self._vad_state = VADState.SPEAKING
-                            self._vad_stopping_count = 0
+                        self._speech_duration_seconds += duration_seconds
                     else:
-                        if self._vad_state == VADState.STARTING:
-                            self._vad_state = VADState.QUIET
-                            self._speech_duration_seconds = 0
-                        elif self._vad_state == VADState.SPEAKING:
+                        if self._vad_state == VADState.STARTING or self._vad_state == VADState.SPEAKING:
                             self._vad_state = VADState.STOPPING
-                            self._silence_duration_seconds = duration_seconds
-                        elif self._vad_state == VADState.STOPPING:
-                            self._silence_duration_seconds += duration_seconds
+                        self._silence_duration_seconds += duration_seconds
 
                     if (
                         self._vad_state == VADState.STARTING
@@ -112,18 +101,22 @@ class SileroVAD(Plugin):
                     ):
                         self._vad_state = VADState.SPEAKING
                         self._speech_duration_seconds = 0
+                        self._silence_duration_seconds = 0
                         logging.info("Speech detected, transitioning to SPEAKING state")
 
-                    if (
+                    elif (
                         self._vad_state == VADState.STOPPING
                         and self._silence_duration_seconds >= self._min_silence_duration_seconds
                     ):
                         self._vad_state = VADState.QUIET
                         self._silence_duration_seconds = 0
+                        self._speech_duration_seconds = 0
                         logging.info("Silence detected, transitioning to QUIET state")
 
-                    logging.debug(f"VAD state: {self._vad_state}")
-                    asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
+                    if self._vad_state != self._prev_vad_state:
+                        logging.info(f"VAD state: {self._vad_state}")
+                        self._prev_vad_state = self._vad_state
+                        asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
         except Exception as e:
             logging.error(f"Error in VAD execution: {str(e)}")
 
