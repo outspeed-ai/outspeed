@@ -84,7 +84,7 @@ class TokenAggregator(Plugin):
         """
         while True:
             vad_state: VADState = await self.interrupt_queue.get()
-            if vad_state == VADState.SPEAKING and not self.output_queue.empty():
+            if vad_state == VADState.SPEAKING and (not self.output_queue.empty() or not self.input_queue.empty()):
                 self.buffer = ""
                 if self._task:
                     self._task.cancel()
