@@ -30,15 +30,13 @@ class AudioRTCDriver(MediaStreamTrack):
         self.output_audio_sample_rate = output_audio_sample_rate
         self.output_audio_layout = output_audio_layout
         self.output_audio_format = output_audio_format
-        self.output_audio_time_base = fractions.Fraction(
-            1, self.output_audio_sample_rate)
+        self.output_audio_time_base = fractions.Fraction(1, self.output_audio_sample_rate)
         self.output_audio_chunk_size_seconds = 0.020
         self.output_audio_resampler = AudioResampler(
             format=self.output_audio_format,
             layout=self.output_audio_layout,
             rate=self.output_audio_sample_rate,
-            frame_size=int(self.output_audio_sample_rate *
-                           self.output_audio_chunk_size_seconds),
+            frame_size=int(self.output_audio_sample_rate * self.output_audio_chunk_size_seconds),
         )
 
     async def recv(self):
@@ -63,7 +61,7 @@ class AudioRTCDriver(MediaStreamTrack):
                 frame = await self._track.recv()
                 await self.audio_input_q.put(AudioData(frame))
         except Exception as e:
-            logging.error("Error in audio_frame_callback: ", e)
+            logging.error(f"Error in audio_frame_callback: {str(e)}")
             raise asyncio.CancelledError
 
     async def run_output(self):
@@ -72,8 +70,9 @@ class AudioRTCDriver(MediaStreamTrack):
                 audio_data: AudioData = await self.audio_output_q.get()
                 if audio_data is None:
                     continue
-                self.audio_samples = max(
-                    self.audio_samples, audio_data.get_pts())
+                while self.audio_data_q.qsize() > 5:
+                    await asyncio.sleep(0.01)
+                self.audio_samples = max(self.audio_samples, audio_data.get_pts())
                 for nframe in self.output_audio_resampler.resample(audio_data.get_frame()):
                     # fix timestamps
                     nframe.pts = self.audio_samples
@@ -81,7 +80,7 @@ class AudioRTCDriver(MediaStreamTrack):
                     self.audio_samples += nframe.samples
                     self.audio_data_q.put_nowait(nframe)
         except Exception as e:
-            logging.error("Error in audio_frame_callback: ", e)
+            logging.error(f"Error in audio_frame_callback: {str(e)}")
             raise asyncio.CancelledError
 
     async def run(self):
