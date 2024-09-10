@@ -43,7 +43,7 @@ class DeepgramSTT(Plugin):
         sample_rate: int = 16000,
         num_channels: int = 1,
         sample_width: int = 2,
-        min_silence_duration: int = 10,
+        min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
     ) -> None:
         """
