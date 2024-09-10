@@ -9,6 +9,7 @@ import torch
 os.environ["TORIO_USE_FFMPEG_VERSION"] = "7"
 # Although torchaudio is not utilized directly in this context, it is necessary to attempt its import as it is a dependency for Silero.
 import torchaudio  # noqa: F401
+from silero_vad import load_silero_vad
 
 
 class SileroVADModel:
@@ -53,7 +54,9 @@ class SileroVADModel:
         self._num_channels = num_channels
 
         logging.info(f"Initializing SileroVADModel with sample rate: {sample_rate}, channels: {num_channels}")
-        self._model, _ = torch.hub.load(repo_or_dir="snakers4/silero-vad", model="silero_vad", force_reload=False)
+        # self._model, _ = torch.hub.load(repo_or_dir="snakers4/silero-vad", model="silero_vad", force_reload=False)
+        self._model = load_silero_vad()
+        print(self._model)
         logging.info("Silero VAD model loaded successfully")
 
         self._last_reset_time = 0

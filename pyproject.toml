@@ -31,6 +31,7 @@ scipy = "^1.13.1"
 torch = "^2.3.0"
 torchaudio = "^2.3.0"
 pyloudnorm = "^0.1.1"
+silero-vad = "^5.1"
 
 [tool.poetry.group.plugins]
 optional = true
