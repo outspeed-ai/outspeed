@@ -69,7 +69,8 @@ class CartesiaTTS(Plugin):
         self.stream: bool = stream
         self.base_url: str = base_url
         self.cartesia_version: str = cartesia_version
-        self._current_context_id: Optional[str] = None
+        self._text_context_id: Optional[str] = None
+        self._audio_context_id: Optional[str] = None
         self._ws = None
 
         # Initialize queues
@@ -115,11 +116,11 @@ class CartesiaTTS(Plugin):
                     if not self._ws:
                         await self.connect_websocket()
                     if text_chunk is None or text_chunk == "":
-                        if self._current_context_id is None:
+                        if self._text_context_id is None:
                             continue
                         payload = {
                             "transcript": "",
-                            "context_id": self._current_context_id,
+                            "context_id": self._text_context_id,
                             "model_id": self.model,
                             "continue": False,
                             "voice": {"mode": "id", "id": self.voice_id},
@@ -131,12 +132,11 @@ class CartesiaTTS(Plugin):
                         }
                         await self._ws.send(json.dumps(payload))
 
-                        self._current_context_id = None
+                        self._text_context_id = None
                         continue
-                    if self._current_context_id is None:
-                        if self._generating:
-                            continue
-                        self._current_context_id = str(uuid.uuid4())
+                    if self._text_context_id is None:
+                        self._text_context_id = str(uuid.uuid4())
+                        self._audio_context_id = self._text_context_id
                     tracing.register_event(tracing.Event.TTS_START)
                     logging.info("Generating TTS: %s", text_chunk)
                     payload = {
@@ -148,7 +148,7 @@ class CartesiaTTS(Plugin):
                         },
                         "transcript": text_chunk,
                         "model_id": self.model,
-                        "context_id": self._current_context_id,
+                        "context_id": self._text_context_id,
                         "continue": True,
                     }
                     self._generating = True
@@ -156,7 +156,8 @@ class CartesiaTTS(Plugin):
             except Exception as e:
                 logging.error("Error sending text to Cartesia TTS: %s", e)
                 self._generating = False
-                self._current_context_id = None
+                self._text_context_id = None
+                self._audio_context_id = None
                 await self.output_queue.put(None)
                 raise asyncio.CancelledError()
 
@@ -172,6 +173,8 @@ class CartesiaTTS(Plugin):
                     response = await self._ws.recv()
                     response = json.loads(response)
                     if response["type"] == "chunk":
+                        if response["context_id"] != self._audio_context_id:
+                            continue
                         audio_bytes = base64.b64decode(response["data"])
                         total_audio_bytes += len(audio_bytes)
                         if is_first_chunk:
@@ -196,7 +199,8 @@ class CartesiaTTS(Plugin):
             except Exception as e:
                 logging.error("Error receiving audio from Cartesia TTS: %s", e)
                 self._generating = False
-                self._current_context_id = None
+                self._audio_context_id = None
+                self._text_context_id = None
                 await self.output_queue.put(None)
                 raise asyncio.CancelledError()
 
@@ -205,7 +209,8 @@ class CartesiaTTS(Plugin):
         except asyncio.CancelledError:
             logging.info("TTS cancelled")
             self._generating = False
-            self._current_context_id = None
+            self._audio_context_id = None
+            self._text_context_id = None
 
     async def close(self):
         """Close the websocket connection and cancel the main task."""
@@ -221,9 +226,11 @@ class CartesiaTTS(Plugin):
         """
         while True:
             vad_state: VADState = await self.interrupt_queue.get()
-            if self._generating and vad_state == VADState.SPEAKING:
+            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 if self._task:
                     self._task.cancel()
+                self._audio_context_id = None
+                self._text_context_id = None
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
                 while not self.input_queue.empty():
