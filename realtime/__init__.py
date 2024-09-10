@@ -36,6 +36,7 @@ try:
     from .websocket import websocket  # noqa: F401
     from .utils.clock import Clock  # noqa: F401
     from .plugins.silero_vad import SileroVAD  # noqa: F401
+    from .plugins.audio_convertor import AudioConverter  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -64,4 +65,5 @@ __all__ = [
     "Clock",
     "SileroVAD",
     "VADStream",
+    "AudioConverter",
 ]
