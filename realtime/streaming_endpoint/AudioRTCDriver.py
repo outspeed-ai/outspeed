@@ -40,8 +40,7 @@ class AudioRTCDriver(MediaStreamTrack):
         )
 
     async def recv(self):
-        frame: AudioData = await self.audio_output_q.get()
-        frame = frame.get_frame()
+        frame = await self.audio_data_q.get()
         data_time = frame.samples / frame.sample_rate
         if self._start is None:
             self._start = time.time() + data_time
@@ -85,7 +84,7 @@ class AudioRTCDriver(MediaStreamTrack):
             raise asyncio.CancelledError
 
     async def run(self):
-        await asyncio.gather(self.run_input())
+        await asyncio.gather(self.run_input(), self.run_output())
 
     def add_track(self, track):
         self._track = track

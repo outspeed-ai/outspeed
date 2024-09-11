@@ -55,7 +55,7 @@ class VoiceBot:
             voice_id="95856005-0332-41b0-935f-352e296aa0df",
         )
         self.vad_node = rt.SileroVAD(sample_rate=8000, min_volume=0)
-        self.audio_converter_node = rt.AudioConverter()
+
         # Set up the AI service pipeline
         deepgram_stream: rt.TextStream = self.deepgram_node.run(audio_input_queue)
 
@@ -68,14 +68,11 @@ class VoiceBot:
         token_aggregator_stream: rt.TextStream = self.token_aggregator_node.run(llm_token_stream)
         tts_stream: rt.AudioStream = self.tts_node.run(token_aggregator_stream)
 
-        audio_converter_stream: rt.AudioStream = self.audio_converter_node.run(tts_stream)
-
         self.llm_node.set_interrupt_stream(vad_stream)
         self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
         self.tts_node.set_interrupt_stream(vad_stream.clone())
-        self.audio_converter_node.set_interrupt_stream(vad_stream.clone())
 
-        return audio_converter_stream
+        return tts_stream
 
     async def teardown(self) -> None:
         """
