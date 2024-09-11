@@ -6,7 +6,7 @@ import time
 from aiortc import MediaStreamTrack
 from av import AudioResampler
 
-from realtime.data import AudioData
+from realtime.data import AudioData, SessionData
 
 
 class AudioRTCDriver(MediaStreamTrack):
@@ -57,6 +57,7 @@ class AudioRTCDriver(MediaStreamTrack):
                 return
             while not self._track:
                 await asyncio.sleep(0.2)
+            await self.audio_input_q.put(SessionData())
             while True:
                 frame = await self._track.recv()
                 await self.audio_input_q.put(AudioData(frame))
@@ -68,7 +69,7 @@ class AudioRTCDriver(MediaStreamTrack):
         try:
             while True:
                 audio_data: AudioData = await self.audio_output_q.get()
-                if audio_data is None:
+                if audio_data is None or not isinstance(audio_data, AudioData):
                     continue
                 while self.audio_data_q.qsize() > 5:
                     await asyncio.sleep(0.01)

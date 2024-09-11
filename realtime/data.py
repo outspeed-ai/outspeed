@@ -3,6 +3,7 @@ import fractions
 import io
 import time
 from typing import Optional, Union
+import uuid
 
 import numpy as np
 from av import AudioFrame, VideoFrame
@@ -273,3 +274,9 @@ class TextData:
         self.data: Optional[str] = data
         self.absolute_time: float = absolute_time or time.time()
         self.relative_time: float = relative_time or 0.0
+
+
+class SessionData:
+    def __init__(self, session_id: str = None, start_time: float = None):
+        self.session_id: str = session_id or str(uuid.uuid4())
+        self.start_time: float = start_time or time.time()

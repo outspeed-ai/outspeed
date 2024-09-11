@@ -2,6 +2,7 @@ import asyncio
 from typing import List, Optional
 import logging
 
+from realtime.data import SessionData
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import TextStream, VADStream
 from realtime.utils.vad import VADState
@@ -59,6 +60,9 @@ class TokenAggregator(Plugin):
                 await self.output_queue.put(None)
                 continue
             if not token:
+                continue
+            if isinstance(token, SessionData):
+                await self.output_queue.put(token)
                 continue
             self.buffer += token
 

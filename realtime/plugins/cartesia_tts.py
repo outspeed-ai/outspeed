@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 import websockets
 
-from realtime.data import AudioData
+from realtime.data import AudioData, SessionData
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import AudioStream, ByteStream, TextStream, VADStream
 from realtime.utils.vad import VADState
@@ -113,6 +113,9 @@ class CartesiaTTS(Plugin):
             try:
                 while True:
                     text_chunk = await self.input_queue.get()
+                    if isinstance(text_chunk, SessionData):
+                        await self.output_queue.put(text_chunk)
+                        continue
                     if not self._ws:
                         await self.connect_websocket()
                     if text_chunk is None or text_chunk == "":

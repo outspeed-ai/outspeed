@@ -20,7 +20,7 @@ sentry_sdk.init(
 
 try:
     from .app import App  # noqa: F401
-    from .data import AudioData, ImageData, TextData  # noqa: F401
+    from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
     from .plugins.azure_tts import AzureTTS  # noqa: F401
@@ -64,4 +64,5 @@ __all__ = [
     "Clock",
     "SileroVAD",
     "VADStream",
+    "SessionData",
 ]

@@ -8,6 +8,7 @@ from openai import AsyncOpenAI
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import TextStream
 from realtime.utils import tracing
+from realtime.data import SessionData
 
 
 class GroqLLM(Plugin):
@@ -73,6 +74,9 @@ class GroqLLM(Plugin):
         while True:
             text_chunk: Optional[str] = await self.input_queue.get()
             if text_chunk is None:
+                continue
+            if isinstance(text_chunk, SessionData):
+                await self.output_queue.put(text_chunk)
                 continue
             self._generating = True
             tracing.register_event(tracing.Event.LLM_START)

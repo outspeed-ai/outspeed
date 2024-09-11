@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import aiohttp
 
-from realtime.data import AudioData
+from realtime.data import AudioData, SessionData
 from realtime.plugins.base_plugin import Plugin
 from realtime.streams import TextStream
 from realtime.utils import tracing
@@ -163,7 +163,7 @@ class DeepgramSTT(Plugin):
         """
         try:
             while True:
-                data: AudioData = await self.input_queue.get()
+                data: AudioData | SessionData = await self.input_queue.get()
                 if not self._ws:
                     await self._connect_ws()
 
@@ -171,6 +171,10 @@ class DeepgramSTT(Plugin):
                     self._closed = True
                     await self._ws.send_str(data)
                     break
+
+                if isinstance(data, SessionData):
+                    await self.output_queue.put(data)
+                    continue
 
                 bytes_data = data.get_bytes()
                 self._audio_duration_received += len(bytes_data) / (
