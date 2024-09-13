@@ -45,6 +45,7 @@ class WhisperSTT(Plugin):
         min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
         base_url: Optional[str] = None,
+        vad_threshold: float = 0.5,
     ) -> None:
         """
         Initialize the DeepgramSTT plugin.
@@ -79,6 +80,7 @@ class WhisperSTT(Plugin):
         self.detect_language: bool = detect_language
         self.interim_results: bool = interim_results
         self.punctuate: bool = punctuate
+        self.vad_threshold: float = vad_threshold
         self.smart_format: bool = smart_format
         self.model: str = model
         self.min_silence_duration: int = min_silence_duration
@@ -139,6 +141,7 @@ class WhisperSTT(Plugin):
             "channels": self._num_channels,
             "language": self.language,
             "min_silence_ms": self.min_silence_duration,
+            "thresh": self.vad_threshold,
         }
 
         # headers = {"Authorization": f"Token {self._api_key}"}
