@@ -24,7 +24,7 @@ class VideoRTCDriver(MediaStreamTrack):
         video_frame = video_data.get_frame()
         self._video_samples = max(self._video_samples, video_frame.pts)
         video_frame.pts = self._video_samples
-        self._video_samples += 1.0 / video_frame.time_base
+        self._video_samples += 1.0
         data_time = video_data.get_duration_seconds()
 
         if self._start is None:
