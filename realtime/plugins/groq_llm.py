@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -9,6 +10,8 @@ from realtime.plugins.base_plugin import Plugin
 from realtime.streams import TextStream
 from realtime.utils import tracing
 from realtime.data import SessionData
+from realtime.streams import VADStream
+from realtime.utils.vad import VADState
 
 
 class GroqLLM(Plugin):
@@ -144,29 +147,26 @@ class GroqLLM(Plugin):
         if self._task:
             self._task.cancel()
 
-    async def _interrupt(self) -> None:
-        """
-        Handle interruptions to the LLM generation.
-
-        This method listens for interrupt signals and cancels the current generation if necessary.
-        """
+    async def _interrupt(self):
         while True:
-            user_speaking: bool = await self.interrupt_queue.get()
-            if self._generating and user_speaking:
-                if self._task:
-                    self._task.cancel()
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
+                self._task.cancel()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
-                print("Done cancelling LLM")
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                logging.info("Done cancelling LLM")
                 self._generating = False
                 self._task = asyncio.create_task(self._stream_chat_completions())
 
-    async def set_interrupt(self, interrupt_queue: asyncio.Queue) -> None:
-        """
-        Set up the interrupt mechanism for the LLM plugin.
-
-        Args:
-            interrupt_queue (asyncio.Queue): The queue to listen for interrupt signals.
-        """
-        self.interrupt_queue = interrupt_queue
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
         self._interrupt_task = asyncio.create_task(self._interrupt())
