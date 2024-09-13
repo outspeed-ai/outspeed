@@ -68,11 +68,11 @@ class AudioRTCDriver(MediaStreamTrack):
     async def run_output(self):
         try:
             while True:
+                while self.audio_data_q.qsize() > 2:
+                    await asyncio.sleep(0.01)
                 audio_data: AudioData = await self.audio_output_q.get()
                 if audio_data is None or not isinstance(audio_data, AudioData):
                     continue
-                while self.audio_data_q.qsize() > 5:
-                    await asyncio.sleep(0.01)
                 self.audio_samples = max(self.audio_samples, audio_data.get_pts())
                 for nframe in self.output_audio_resampler.resample(audio_data.get_frame()):
                     # fix timestamps
