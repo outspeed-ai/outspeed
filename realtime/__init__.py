@@ -36,6 +36,8 @@ try:
     from .websocket import websocket  # noqa: F401
     from .utils.clock import Clock  # noqa: F401
     from .plugins.silero_vad import SileroVAD  # noqa: F401
+    from .utils.vad import VADState  # noqa: F401
+    from .plugins.whisper_stt import WhisperSTT  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -65,4 +67,6 @@ __all__ = [
     "SileroVAD",
     "VADStream",
     "SessionData",
+    "VADState",
+    "WhisperSTT",
 ]
