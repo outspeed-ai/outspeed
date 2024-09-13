@@ -46,8 +46,8 @@ class VoiceBot:
             rt.AudioStream: The output stream of generated audio responses.
         """
         # Initialize the AI services
-        self.deepgram_node = rt.DeepgramSTT(sample_rate=8000)
-        self.llm_node = rt.FireworksLLM(
+        self.deepgram_node = rt.WhisperSTT(sample_rate=8000, base_url="ws://52.34.238.91:8765/ws", api_key="test")
+        self.llm_node = rt.GroqLLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
         )
         self.token_aggregator_node = rt.TokenAggregator()
