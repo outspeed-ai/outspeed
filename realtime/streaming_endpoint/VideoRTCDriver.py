@@ -19,13 +19,14 @@ class VideoRTCDriver(MediaStreamTrack):
 
     async def recv(self):
         video_data = await self.video_output_q.get()
-        if video_data is None:
+        if video_data is None or not isinstance(video_data, ImageData):
             return None
         video_frame = video_data.get_frame()
         self._video_samples = max(self._video_samples, video_frame.pts)
         video_frame.pts = self._video_samples
         self._video_samples += 1.0 / video_frame.time_base
         data_time = video_data.get_duration_seconds()
+
         if self._start is None:
             self._start = time.time() + data_time
         else:

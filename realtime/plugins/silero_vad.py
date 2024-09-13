@@ -68,6 +68,8 @@ class SileroVAD(Plugin):
             while True:
                 future = asyncio.run_coroutine_threadsafe(self.input_queue.get(), self._loop)
                 audio_data: AudioData = future.result()
+                if audio_data is None or not isinstance(audio_data, AudioData):
+                    continue
                 buffer = audio_data.get_bytes()
                 self._vad_buffer += buffer
 

@@ -10,6 +10,7 @@ from realtime.plugins.base_plugin import Plugin
 from realtime.streams import TextStream, VADStream
 from realtime.utils import tracing
 from realtime.utils.vad import VADState
+from realtime.data import SessionData
 
 
 class FireworksLLM(Plugin):
@@ -46,6 +47,10 @@ class FireworksLLM(Plugin):
             while True:
                 text_chunk = await self.input_queue.get()
                 if text_chunk is None:
+                    continue
+
+                if isinstance(text_chunk, SessionData):
+                    await self.output_queue.put(text_chunk)
                     continue
                 self._generating = True
                 self._history.append({"role": "user", "content": text_chunk})
