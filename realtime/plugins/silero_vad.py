@@ -65,6 +65,7 @@ class SileroVAD(Plugin):
 
     def execute_vad(self):
         try:
+            asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
             while True:
                 future = asyncio.run_coroutine_threadsafe(self.input_queue.get(), self._loop)
                 audio_data: AudioData = future.result()

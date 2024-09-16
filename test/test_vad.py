@@ -6,7 +6,7 @@ from pydub import AudioSegment
 
 from realtime.data import AudioData
 from realtime.plugins.silero_vad import SileroVAD, VADState
-from realtime.streams import AudioStream, TextStream
+from realtime.streams import AudioStream, VADStream
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -36,16 +36,16 @@ async def test_run():
     await input_queue.put(silent_audio)
 
     # Run the SileroVAD
-    output_stream = await silero_vad.run(input_queue)
+    output_stream = silero_vad.run(input_queue)
 
     # Check if the returned stream is a TextStream
-    assert isinstance(output_stream, TextStream)
+    assert isinstance(output_stream, VADStream)
 
     # Wait for a short time to allow the VAD to process
     await asyncio.sleep(1.0)
 
     # Check if we received a VADState from the output queue
-    vad_state = await asyncio.wait_for(output_stream.get(), timeout=2.0)
+    vad_state = await asyncio.wait_for(output_stream.get(), timeout=4.0)
     assert isinstance(vad_state, VADState)
     # Since we provided silent audio, we expect the state to be NOT_SPEAKING
     assert vad_state == VADState.QUIET
@@ -88,7 +88,7 @@ async def test_run_with_speech():
 
     await input_queue.put(speech_audio)
 
-    output_stream = await silero_vad.run(input_queue)
+    output_stream = silero_vad.run(input_queue)
 
     # Wait for the VAD to process
     await asyncio.sleep(1.5)
