@@ -3764,4 +3764,4 @@ plugins = ["elevenlabs", "fal-client", "fireworks-ai", "google-cloud-vision", "g
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.12"
-content-hash = "ac44ce160a9ec035f9c13d237e4b5402a80baad01471abc1d53c55482cacf119"
+content-hash = "ecd19a7cc7d48e607b1103644dda79f31c51b596310a31af05dbc0add1d173d9"
