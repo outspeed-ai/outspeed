@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "realtime-client"
-version = "0.1.137"
+version = "0.1.143"
 description = ""
 authors = ["Adapt <hello@getadapt.ai>"]
 readme = "README.md"
@@ -26,8 +26,9 @@ openai = "^1.35.10"
 pillow = "^10.3.0"
 numpy = "^1.26.4"
 scipy = "^1.13.1"
-torch = "^2.3.0"
-torchaudio = "^2.3.0"
+torch = [{version = "^2.3.0", platform = "darwin", source = "pypi" }, {version = "^2.3.0", source = "pytorch-cpu", platform = "linux"}]
+torchaudio = [{version = "^2.3.0", source = "pytorch-cpu", platform = "linux"}, {version = "^2.3.0", platform = "darwin", source = "pypi"}]
+torchvision = [{version = "^0.18.0",source = "pytorch-cpu", platform = "linux"}, {version = "^0.18.0", platform = "darwin", source = "pypi"}]
 pyloudnorm = "^0.1.1"
 silero-vad = "^5.1"
 
@@ -37,7 +38,7 @@ fireworks-ai = { version = "^0.14.0", optional = true }
 google-generativeai = { version = "^0.5.3", optional = true }
 opencv-python-headless = { version = "^4.10.0.82", optional = true }
 google-cloud-vision = { version = "^3.7.2", optional = true }
-torchvision = { version = "^0.18.0", optional = true }
+pydub = "^0.25.1"
 
 [tool.poetry.extras]
 plugins = [
@@ -47,16 +48,6 @@ plugins = [
     "google-generativeai",
     "opencv-python-headless",
     "google-cloud-vision",
-]
-torch = ["torchvision"]
-all = [
-    "fal-client",
-    "elevenlabs",
-    "fireworks-ai",
-    "google-generativeai",
-    "opencv-python-headless",
-    "google-cloud-vision",
-    "torchvision",
 ]
 
 [tool.poetry.group.dev.dependencies]
