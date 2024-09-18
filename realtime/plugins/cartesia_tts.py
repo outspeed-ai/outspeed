@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 import os
+import time
 import uuid
 from typing import Optional
 from urllib.parse import urlencode
@@ -113,11 +114,11 @@ class CartesiaTTS(Plugin):
             try:
                 while True:
                     text_chunk = await self.input_queue.get()
+                    if not self._ws:
+                        await self.connect_websocket()
                     if isinstance(text_chunk, SessionData):
                         await self.output_queue.put(text_chunk)
                         continue
-                    if not self._ws:
-                        await self.connect_websocket()
                     if text_chunk is None or text_chunk == "":
                         if self._text_context_id is None:
                             continue
@@ -182,11 +183,9 @@ class CartesiaTTS(Plugin):
                         total_audio_bytes += len(audio_bytes)
                         if is_first_chunk:
                             tracing.register_event(tracing.Event.TTS_TTFB)
-                            print("Sending first chunk")
+                            logging.info("Got TTS first chunk", time.time())
                             is_first_chunk = False
-                        await self.output_queue.put(
-                            AudioData(audio_bytes, sample_rate=self.output_sample_rate, relative_start_time=0)
-                        )
+                        await self.output_queue.put(AudioData(audio_bytes, sample_rate=self.output_sample_rate))
                     elif response["type"] == "done":
                         tracing.register_event(tracing.Event.TTS_END)
                         tracing.register_metric(tracing.Metric.TTS_TOTAL_BYTES, total_audio_bytes)
