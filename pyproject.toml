@@ -1,0 +1,91 @@
+[tool.poetry]
+name = "outspeed"
+version = "0.1.136"
+description = ""
+authors = ["Outspeed <contact@outspeed.ai>"]
+readme = "README.md"
+packages = [{ include = "outspeed" }]
+
+[tool.poetry.dependencies] # main dependency group
+aiohttp = "^3.9.5"
+realtime-aioice = "^0.9.0"
+aiortc = "^1.8.0"
+click = "^8.1.7"
+dill = "^0.3.8"
+fastapi = "^0.110.2"
+python = ">=3.9 <3.12"                     # python 3.12 is not supported by aiortc
+requests = "^2.31.0"
+setuptools = "^69.5.1"                     # needed for aiortc
+uvicorn = "^0.29.0"
+websockets = "^12.0"
+python-multipart = "^0.0.9"
+urllib3 = "<2.0"
+sentry-sdk = "^2.9.0"
+azure-cognitiveservices-speech = "^1.37.0"
+openai = "^1.35.10"
+pillow = "^10.3.0"
+numpy = "^1.26.4"
+scipy = "^1.13.1"
+
+fal-client = { version = "^0.4.0", optional = true }
+elevenlabs = { version = "^1.2.0", optional = true }
+fireworks-ai = { version = "^0.14.0", optional = true }
+google-generativeai = { version = "^0.5.3", optional = true }
+opencv-python-headless = { version = "^4.10.0.82", optional = true }
+google-cloud-vision = { version = "^3.7.2", optional = true }
+torch = { version = "^2.3.0", optional = true }
+torchaudio = { version = "^2.3.0", optional = true }
+torchvision = { version = "^0.18.0", optional = true }
+
+[tool.poetry.extras]
+plugins = [
+    "fal-client",
+    "elevenlabs",
+    "fireworks-ai",
+    "google-generativeai",
+    "opencv-python-headless",
+    "google-cloud-vision",
+]
+torch = ["torch", "torchaudio", "torchvision"]
+all = [
+    "fal-client",
+    "elevenlabs",
+    "fireworks-ai",
+    "google-generativeai",
+    "opencv-python-headless",
+    "google-cloud-vision",
+    "torch",
+    "torchaudio",
+    "torchvision",
+]
+
+[tool.poetry.group.dev.dependencies]
+aiohttp-middlewares = "^2.3.0"
+matplotlib = "^3.8.4"
+peakutils = "^1.3.4"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[tool.poetry.scripts]
+realtime = "realtime.cli:cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+exclude = ['.venv', '.git', '__pycache__', 'proto', 'build']
+line-length = 120
+lint.ignore = ['E501', 'E741']
+lint.select = ['E', 'F', 'W', 'I']
+
+[tool.ruff.lint.per-file-ignores]
+"*_test.py" = ['E712']
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["realtime"]
+extra-standard-library = ["pytest"]
