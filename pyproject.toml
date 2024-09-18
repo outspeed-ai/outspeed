@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "realtime-client"
-version = "0.1.144"
+version = "0.1.145"
 description = ""
 authors = ["Adapt <hello@getadapt.ai>"]
 readme = "README.md"
@@ -26,9 +26,9 @@ openai = "^1.35.10"
 pillow = "^10.3.0"
 numpy = "^1.26.4"
 scipy = "^1.13.1"
-torch = [{version = "^2.3.0", source = "pytorch-cpu", platform = "linux"}, {version = "^2.3.0", platform = "darwin", source = "pypi" }]
-torchaudio = [{version = "^2.3.0", source = "pytorch-cpu", platform = "linux"}, {version = "^2.3.0", platform = "darwin", source = "pypi"}]
-torchvision = [{version = "^0.18.0",source = "pytorch-cpu", platform = "linux"}, {version = "^0.18.0", platform = "darwin", source = "pypi"}]
+torch = [{version = "2.3.0+cpu", source = "pytorch-cpu", platform = "linux"}, {version = "^2.3.0", platform = "darwin", source = "pypi" }, {version = "2.3.0+cpu", source = "pytorch-cpu", platform = "win32"}]
+torchaudio = [{version = "2.3.0+cpu", source = "pytorch-cpu", platform = "linux"}, {version = "^2.3.0", platform = "darwin", source = "pypi"}, {version = "2.3.0+cpu", source = "pytorch-cpu", platform = "win32"}]
+torchvision = [{version = "0.18.0+cpu",source = "pytorch-cpu", platform = "linux"}, {version = "^0.18.0", platform = "darwin", source = "pypi"}, {version = "0.18.0+cpu", source = "pytorch-cpu", platform = "win32"}]
 pyloudnorm = "^0.1.1"
 silero-vad = "^5.1"
 
