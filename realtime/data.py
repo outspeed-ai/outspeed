@@ -2,7 +2,7 @@ import base64
 import fractions
 import io
 import time
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 import uuid
 
 import numpy as np
@@ -29,6 +29,7 @@ class AudioData:
         sample_width: int = 2,
         format: str = "wav",
         relative_start_time: Optional[float] = None,
+        extra_tags: Dict[str, Any] = {},
     ):
         """
         Initialize an AudioData object.
@@ -52,6 +53,7 @@ class AudioData:
         self.channels: int = channels
         self.sample_width: int = sample_width
         self.format: str = format
+        self.extra_tags: Dict[str, Any] = extra_tags
         self.relative_start_time: float = relative_start_time or Clock.get_playback_time()
 
     def get_bytes(self) -> bytes:
@@ -173,6 +175,7 @@ class ImageData:
         frame_rate: int = 30,
         format: str = "jpeg",
         relative_start_time: Optional[float] = None,
+        extra_tags: Dict[str, Any] = {},
     ):
         """
         Initialize an ImageData object.
@@ -196,6 +199,7 @@ class ImageData:
         self.height: int = height
         self.frame_rate: int = frame_rate
         self.format: str = format
+        self.extra_tags: Dict[str, Any] = extra_tags
         self.relative_start_time: float = relative_start_time or Clock.get_playback_time()
 
     def get_pts(self) -> int:
