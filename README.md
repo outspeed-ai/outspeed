@@ -29,11 +29,11 @@ pip install outspeed
 ```
 
 This would install the core `outspeed` package.
-You can read [docs](http://docs.outspeed.ai) to get started.
+You can read [docs](http://docs.outspeed.com) to get started.
 
 ### Usage
 
-You can read the [docs](http://docs.outspeed.ai) to learn more about the SDK.
+You can read the [docs](http://docs.outspeed.com) to learn more about the SDK.
 
 To deploy your realtime function on Outspeed's infra, you can use the `outspeed deploy` CLI.
 
@@ -42,7 +42,7 @@ To deploy your realtime function on Outspeed's infra, you can use the `outspeed 
 outspeed deploy --api-key=<your-api-key> functions.py
 ```
 
-[Contact us](mailto:contact@outspeed.ai) to get an API key and deploy.
+[Contact us](mailto:contact@outspeed.com) to get an API key and deploy.
 
 Once deployed, you can use the playground in the examples repo to test the deployed code.
 
