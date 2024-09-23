@@ -19,7 +19,6 @@ Outspeed is a PyTorch-inspired SDK for building real-time AI applications on voi
 
 Ideal for developing voice assistants, video analytics, and other real-time AI applications processing audio-visual data.
 
-
 ## Install
 
 You can install `outspeed` SDK from pypi using
