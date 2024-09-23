@@ -47,7 +47,7 @@ class VoiceBot:
         """
         # Initialize the AI services
         self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
-        self.llm_node = sp.FireworksLLM(
+        self.llm_node = sp.GroqLLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
         )
         self.token_aggregator_node = sp.TokenAggregator()
