@@ -7,7 +7,7 @@ import outspeed as sp
 logging.basicConfig(level=logging.INFO)
 
 """
-Wrapping your class with @realtime.App() will tell the realtime server which functions to run.
+Wrapping your class with @outspeed.App() will tell the outspeed server which functions to run.
 """
 
 

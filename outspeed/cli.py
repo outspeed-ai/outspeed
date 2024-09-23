@@ -11,7 +11,7 @@ def cli():
     pass
 
 
-@cli.command()  # This adds the deploy function as a sub-command of realtime
+@cli.command()  # This adds the deploy function as a sub-command of outspeed
 @click.argument(
     "file_path",
     type=click.Path(exists=True),
@@ -26,7 +26,9 @@ def deploy(file_path, api_key, base_url):
     endpoint = f"{BASE_URL}/deploy"
     api_key = api_key or os.getenv("OUTSPEED_API_KEY")
     if not api_key:
-        click.echo("No API key provided. Please set the OUTSPEED_API_KEY environment variable or use the --api-key flag.")
+        click.echo(
+            "No API key provided. Please set the OUTSPEED_API_KEY environment variable or use the --api-key flag."
+        )
         return
     try:
         with open(file_path, "rb") as file:

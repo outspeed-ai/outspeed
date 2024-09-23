@@ -70,7 +70,7 @@ url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
 
 [tool.poetry.scripts]
-realtime = "realtime.cli:cli"
+outspeed = "outspeed.cli:cli"
 
 [build-system]
 requires = ["poetry-core"]
@@ -87,5 +87,5 @@ lint.select = ['E', 'F', 'W', 'I']
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["realtime"]
+known-first-party = ["outspeed"]
 extra-standard-library = ["pytest"]

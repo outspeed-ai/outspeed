@@ -7,8 +7,8 @@ import outspeed as sp
 logging.basicConfig(level=logging.INFO)
 
 """
-The @realtime.App() decorator is used to wrap the VoiceBot class.
-This tells the realtime server which functions to run.
+The @outspeed.App() decorator is used to wrap the VoiceBot class.
+This tells the outspeed server which functions to run.
 """
 
 
