@@ -1,9 +1,18 @@
 import logging
+import os
 import time
 from enum import Enum
 from statistics import mean
 from typing import Dict, List, Optional, Tuple, Union
 
+logger = logging.getLogger(__name__)
+
+if os.getenv("DEV_INFO"):
+    logger.setLevel(logging.INFO)
+elif os.getenv("DEV_DEBUG"):
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.ERROR)
 
 class Event(Enum):
     START = "start"
@@ -46,7 +55,8 @@ class Tracer:
 
     def _calculate_average(self, start_event: Event, end_event: Event) -> float:
         latencies = [
-            self.current_trace[end_event][i] - self.current_trace[start_event][i]
+            self.current_trace[end_event][i] -
+            self.current_trace[start_event][i]
             for i in range(min(len(self.current_trace[start_event]), len(self.current_trace[end_event])))
             if end_event in self.current_trace and start_event in self.current_trace
         ]
@@ -55,7 +65,8 @@ class Tracer:
     def _calculate_throughput(self, metric: Metric, start_event: Event, end_event: Event) -> float:
         try:
             throughputs = [
-                self.current_trace[metric][i] / (self.current_trace[end_event][i] - self.current_trace[start_event][i])
+                self.current_trace[metric][i] / (
+                    self.current_trace[end_event][i] - self.current_trace[start_event][i])
                 for i in range(
                     min(
                         len(self.current_trace[start_event]),
@@ -68,7 +79,8 @@ class Tracer:
                 and metric in self.current_trace
             ]
         except Exception as e:
-            logging.error("Error calculating throughput: %s", e, metric, start_event, end_event)
+            logger.error("Error calculating throughput: %s",
+                          e, metric, start_event, end_event)
             return 0.0
         return mean(throughputs) if throughputs else 0.0
 
@@ -84,10 +96,11 @@ class Tracer:
             "Total Speech to Speech Latency": self._calculate_average(Event.USER_SPEECH_END, Event.TTS_END),
         }
 
-        logging.info("=== Average Performance Statistics ===")
+        logger.info("=== Average Performance Statistics ===")
         for stat_name, stat_value in stats.items():
-            logging.info(f"{stat_name}: {stat_value:.2f} {'seconds' if 'Latency' in stat_name else 'bytes/second'}")
-        logging.info("======================================")
+            logger.info(
+                f"{stat_name}: {stat_value:.2f} {'seconds' if 'Latency' in stat_name else 'bytes/second'}")
+        logger.info("======================================")
 
     def log_current_stats(self) -> None:
         if self.current_trace is None:
@@ -104,11 +117,12 @@ class Tracer:
             "Total Speech to Speech Latency": self._get_event_diff(Event.USER_SPEECH_END, Event.TTS_END),
         }
 
-        logging.info("=== Current Performance Statistics ===")
+        logger.info("=== Current Performance Statistics ===")
         for stat_name, stat_value in stats.items():
             if stat_value is not None:
-                logging.info(f"{stat_name}: {stat_value:.2f} {'seconds' if 'Latency' in stat_name else 'bytes/second'}")
-        logging.info("=======================================")
+                logger.info(
+                    f"{stat_name}: {stat_value:.2f} {'seconds' if 'Latency' in stat_name else 'bytes/second'}")
+        logger.info("=======================================")
 
     def _get_event_diff(self, start_event: Event, end_event: Event) -> Optional[float]:
         if start_event in self.current_trace and end_event in self.current_trace:
@@ -119,34 +133,37 @@ class Tracer:
         try:
             if all(key in self.current_trace for key in (metric, start_event, end_event)):
                 return self.current_trace[metric][-1] / (
-                    self.current_trace[end_event][-1] - self.current_trace[start_event][-1]
+                    self.current_trace[end_event][-1] -
+                    self.current_trace[start_event][-1]
                 )
         except Exception as e:
-            logging.error("Error calculating throughput: %s", e, metric, start_event, end_event)
+            logger.error("Error calculating throughput: %s",
+                          e, metric, start_event, end_event)
             return None
 
     def log_timeline(self) -> None:
         if not self.events:
-            logging.info("No timeline events recorded.")
+            logger.info("No timeline events recorded.")
             return
 
-        logging.info("=== Timeline ===")
+        logger.info("=== Timeline ===")
         start_time = self.events[0][0]
         last_time = start_time
 
-        logging.info(f"{'Elapsed':>8} {'Delta':>8} {'Event':<25} {'Value'}")
-        logging.info("-" * 50)
+        logger.info(f"{'Elapsed':>8} {'Delta':>8} {'Event':<25} {'Value'}")
+        logger.info("-" * 50)
 
         for timestamp, event in self.events:
             elapsed_time = timestamp - start_time
             delta_time = timestamp - last_time
             event_name = event.name if isinstance(event, Event) else event.name
 
-            logging.info(f"{elapsed_time:8.3f}s {delta_time:8.3f}s {event_name:<25}")
+            logger.info(
+                f"{elapsed_time:8.3f}s {delta_time:8.3f}s {event_name:<25}")
 
             last_time = timestamp
 
-        logging.info("=" * 50)
+        logger.info("=" * 50)
 
 
 # Global instance

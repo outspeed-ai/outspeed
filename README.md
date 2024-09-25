@@ -62,3 +62,9 @@ poetry add 'outspeed[plugins,torch]'
 ```
 
 This will install all the additional libraries that are required for examples to work.
+
+***
+
+## Contribute
+
+To develop on top of the SDK, set environment variable `DEV_INFO` or `DEV_DEBUG` to get logs from the SDK for the corresponding log level.
