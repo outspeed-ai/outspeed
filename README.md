@@ -1,27 +1,20 @@
-<!--BEGIN_BANNER_IMAGE-->
+<div align="center">
+
 <p align="center">
-<picture>
+  <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/.github/outspeed_dark.jpg">
   <source media="(prefers-color-scheme: light)" srcset="/.github/outspeed_light.jpg">
-  <img style="width:100%;" alt="The Outspeed Logo and SDK repository." src="https://raw.githubusercontent.com/outspeed/outspeed/main/.github/banner_light.png">
-</picture>
+  <img style="width:50%;" alt="The Outspeed Logo and SDK repository." src="https://raw.githubusercontent.com/outspeed/outspeed/main/.github/banner_light.png" width="50%">
+  </picture>
 </p>
 
-<!--END_BANNER_IMAGE-->
+[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/outspeed.svg?style=social&label=Follow%20%40outspeedAI)](https://twitter.com/outspeedAI) [![GitHub Repo stars](https://img.shields.io/github/stars/outspeed-ai/outspeed?style=social)](https://github.com/outspeed-ai/outspeed)
+[![pypi](https://img.shields.io/pypi/v/outspeed.svg)](https://pypi.python.org/pypi/outspeed)
+[![Downloads](https://static.pepy.tech/badge/outspeed/month)](https://pepy.tech/project/outspeed)
 
-<p align="center">
+[Community](https://discord.gg/cmffw6syvp) | [Docs](https://docs.outspeed.com) | [Dashboard](https://app.outspeed.com)
 
-  <a href="https://docs.outspeed.com">
-    <img src="https://github.com/user-attachments/assets/c60562bf-540e-47d9-b578-994285071128" width="250">
-  </a>
-
-</p>
-
-<p align="center">
-
-<a href="https://discord.gg/cmfFw6SYvp"><img alt="Static Badge" src="https://img.shields.io/badge/Discord-Join?style=social&logo=discord" width=150></a>
-
-</p>
+</div>
 
 # Outspeed
 
@@ -43,11 +36,11 @@ pip install outspeed
 ```
 
 This would install the core `outspeed` package.
-You can read [docs](http://docs.outspeed.com) to get started.
+Read our [quickstart guide](https://docs.outspeed.com/examples/quickstart) to get started.
 
 ### Usage
 
-You can read the [docs](http://docs.outspeed.com) to learn more about the SDK.
+Read the [docs](http://docs.outspeed.com) to learn more about the SDK.
 
 To deploy your realtime function on Outspeed's infra, you can use the `outspeed deploy` CLI.
 
