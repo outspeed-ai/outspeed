@@ -14,7 +14,12 @@
   <a href="https://docs.outspeed.com">
     <img src="https://github.com/user-attachments/assets/c60562bf-540e-47d9-b578-994285071128" width="250">
   </a>
-    <a href="https://discord.gg/cmfFw6SYvp"><img alt="Static Badge" src="https://img.shields.io/badge/Discord-Join?style=social&logo=discord" width=150></a>
+
+</p>
+
+<p align="center">
+
+<a href="https://discord.gg/cmfFw6SYvp"><img alt="Static Badge" src="https://img.shields.io/badge/Discord-Join?style=social&logo=discord" width=150></a>
 
 </p>
 
