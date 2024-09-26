@@ -1,12 +1,22 @@
 <!--BEGIN_BANNER_IMAGE-->
-
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/.github/outspeed_dark.jpg">
   <source media="(prefers-color-scheme: light)" srcset="/.github/outspeed_light.jpg">
   <img style="width:100%;" alt="The Outspeed Logo and SDK repository." src="https://raw.githubusercontent.com/outspeed/outspeed/main/.github/banner_light.png">
 </picture>
+</p>
 
 <!--END_BANNER_IMAGE-->
+
+<p align="center">
+
+  <a href="https://docs.outspeed.com">
+    <img src="https://github.com/user-attachments/assets/c60562bf-540e-47d9-b578-994285071128" width="250">
+  </a>
+    <a href="https://discord.gg/cmfFw6SYvp"><img alt="Static Badge" src="https://img.shields.io/badge/Discord-Join?style=social&logo=discord" width=150></a>
+
+</p>
 
 # Outspeed
 
@@ -18,7 +28,6 @@ Outspeed is a PyTorch-inspired SDK for building real-time AI applications on voi
 - Tools for data preprocessing and model deployment
 
 Ideal for developing voice assistants, video analytics, and other real-time AI applications processing audio-visual data.
-
 
 ## Install
 
@@ -63,7 +72,7 @@ poetry add 'outspeed[plugins,torch]'
 
 This will install all the additional libraries that are required for examples to work.
 
-***
+---
 
 ## Contribute
 
