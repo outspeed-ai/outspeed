@@ -23,6 +23,7 @@ try:
     from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
+    from .plugins import contrib
     from .plugins.azure_tts import AzureTTS  # noqa: F401
     from .plugins.cartesia_tts import CartesiaTTS  # noqa: F401
     from .plugins.deepgram_stt import DeepgramSTT  # noqa: F401
@@ -48,27 +49,28 @@ except Exception:
     raise
 
 __all__ = [
-    "streaming_endpoint",
     "App",
-    "web_endpoint",
-    "websocket",
     "AudioData",
-    "ImageData",
-    "TextData",
-    "CartesiaTTS",
-    "DeepgramSTT",
-    "GroqLLM",
-    "TokenAggregator",
-    "map",
-    "merge",
     "AzureTTS",
+    "CartesiaTTS",
+    "Clock",
+    "contrib",
+    "DeepgramSTT",
     "ElevenLabsTTS",
     "FireworksLLM",
-    "Clock",
-    "SileroVAD",
-    "VADStream",
-    "SessionData",
-    "VADState",
-    "WhisperSTT",
+    "GroqLLM",
+    "ImageData",
+    "map",
+    "merge",
     "OpenAILLM",
+    "SessionData",
+    "SileroVAD",
+    "streaming_endpoint",
+    "TextData",
+    "TokenAggregator",
+    "VADState",
+    "VADStream",
+    "web_endpoint",
+    "websocket",
+    "WhisperSTT",
 ]
