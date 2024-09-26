@@ -1,12 +1,27 @@
 <!--BEGIN_BANNER_IMAGE-->
-
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/.github/outspeed_dark.jpg">
   <source media="(prefers-color-scheme: light)" srcset="/.github/outspeed_light.jpg">
   <img style="width:100%;" alt="The Outspeed Logo and SDK repository." src="https://raw.githubusercontent.com/outspeed/outspeed/main/.github/banner_light.png">
 </picture>
+</p>
 
 <!--END_BANNER_IMAGE-->
+
+<p align="center">
+
+  <a href="https://docs.outspeed.com">
+    <img src="https://github.com/user-attachments/assets/c60562bf-540e-47d9-b578-994285071128" width="250">
+  </a>
+
+</p>
+
+<p align="center">
+
+<a href="https://discord.gg/cmfFw6SYvp"><img alt="Static Badge" src="https://img.shields.io/badge/Discord-Join?style=social&logo=discord" width=150></a>
+
+</p>
 
 # Outspeed
 
@@ -18,7 +33,6 @@ Outspeed is a PyTorch-inspired SDK for building real-time AI applications on voi
 - Tools for data preprocessing and model deployment
 
 Ideal for developing voice assistants, video analytics, and other real-time AI applications processing audio-visual data.
-
 
 ## Install
 
@@ -63,8 +77,25 @@ poetry add 'outspeed[plugins,torch]'
 
 This will install all the additional libraries that are required for examples to work.
 
-***
+---
+
+### Logging
+
+To develop on top of the SDK, set environment variable `DEV_INFO` or `DEV_DEBUG` to get logs from the SDK for the corresponding log level.
+
+## Roadmap
+
+| Feature                                                      | Status     | Target Release |
+| ------------------------------------------------------------ | ---------- | -------------- |
+| Local STT                                                    | On the way | Q4 2024        |
+| DeepReel Integration (Human Clone)                           | On the way | Q4 2024        |
+| Long Conversation Support                                    | Planned    | Q4 2024        |
+| Local Model Vision and Text (With Ollama, and vision models) | Planned    | Q4 2024        |
+| Call Recording                                               | Planned    | Q4 2024        |
+| Wakeup Word                                                  | Planned    | Q4 2024        |
+| On device models                                             | Planned    | Q4 2024        |
+| Local TTS                                                    | Planned    | Q4 2024        |
 
 ## Contribute
 
-To develop on top of the SDK, set environment variable `DEV_INFO` or `DEV_DEBUG` to get logs from the SDK for the corresponding log level.
+We welcome contributions to the Outspeed SDK! If you're interested in contributing, please submit a PR or [contact us](mailto:contact@outspeed.com).
