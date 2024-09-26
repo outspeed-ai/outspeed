@@ -79,6 +79,23 @@ This will install all the additional libraries that are required for examples to
 
 ---
 
-## Contribute
+### Logging
 
 To develop on top of the SDK, set environment variable `DEV_INFO` or `DEV_DEBUG` to get logs from the SDK for the corresponding log level.
+
+## Roadmap
+
+| Feature                                                      | Status     | Target Release |
+| ------------------------------------------------------------ | ---------- | -------------- |
+| Local STT                                                    | On the way | Q4 2024        |
+| DeepReel Integration (Human Clone)                           | On the way | Q4 2024        |
+| Long Conversation Support                                    | Planned    | Q4 2024        |
+| Local Model Vision and Text (With Ollama, and vision models) | Planned    | Q4 2024        |
+| Call Recording                                               | Planned    | Q4 2024        |
+| Wakeup Word                                                  | Planned    | Q4 2024        |
+| On device models                                             | Planned    | Q4 2024        |
+| Local TTS                                                    | Planned    | Q4 2024        |
+
+## Contribute
+
+We welcome contributions to the Outspeed SDK! If you're interested in contributing, please submit a PR or [contact us](mailto:contact@outspeed.com).
