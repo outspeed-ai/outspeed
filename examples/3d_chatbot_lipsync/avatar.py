@@ -27,12 +27,8 @@ class Chatbot:
     """
 
     async def setup(self):
-        pass
-
-    @sp.websocket()
-    async def run(self, audio_input_stream: sp.AudioStream, message_stream: sp.TextStream):
-        deepgram_node = sp.DeepgramSTT(sample_rate=audio_input_stream.sample_rate)
-        llm_node = sp.GroqLLM(
+        self.deepgram_node = sp.DeepgramSTT(sample_rate=48000)
+        self.llm_node = sp.GroqLLM(
             system_prompt="You are a language tutor who teaches English.\
             You will always reply with a JSON object.\
             Each message has a text and facialExpression property.\
@@ -42,19 +38,22 @@ class Chatbot:
             response_format={"type": "json_object"},
             stream=False,
         )
-        text_to_viseme_node = talkinghead.TextToViseme()
-        viseme_to_audio_node = talkinghead.VisemeToAudio(api_key="AIzaSyDKnQEdeUyNeFMQciUkHDuX4AbeplQyuWg")
+        self.text_to_viseme_node = talkinghead.TextToViseme()
+        self.viseme_to_audio_node = talkinghead.VisemeToAudio(api_key="AIzaSyDKnQEdeUyNeFMQciUkHDuX4AbeplQyuWg")
 
-        deepgram_stream = deepgram_node.run(audio_input_stream)
+
+    @sp.websocket()
+    async def run(self, audio_input_stream: sp.AudioStream, message_stream: sp.TextStream):
+        deepgram_stream = self.deepgram_node.run(audio_input_stream)
         combined_text_stream = sp.merge([deepgram_stream, message_stream])
 
-        llm_token_stream, _ = llm_node.run(combined_text_stream)
+        llm_token_stream, _ = self.llm_node.run(combined_text_stream)
         json_text_stream = sp.map(llm_token_stream, check_and_load)
 
-        lip_syncd_stream = text_to_viseme_node.run(json_text_stream)
-        viseme_to_audio_stream = viseme_to_audio_node.run(lip_syncd_stream)
+        lip_syncd_stream = self.text_to_viseme_node.run(json_text_stream)
+        viseme_to_audio_stream = self.viseme_to_audio_node.run(lip_syncd_stream)
 
-        return _, viseme_to_audio_stream
+        return viseme_to_audio_stream
 
     async def teardown(self):
         pass
