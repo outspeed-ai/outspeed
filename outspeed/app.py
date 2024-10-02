@@ -87,9 +87,12 @@ class RealtimeApp:
                 loop.run_until_complete(asyncio.gather(RealtimeServer().start(), rt_func(self._user_cls_instance)))
             else:
                 loop.run_until_complete(asyncio.gather(RealtimeServer().start()))
+        except asyncio.CancelledError:
+            logging.error("RealtimeServer was cancelled")
+        except Exception as e:
+            logging.error(f"Error in RealtimeApp: {e}")
 
+        finally:
             # Run teardown
             loop.run_until_complete(self._user_cls_instance.teardown())
-        except Exception as e:
-            logging.error(e)
             loop.run_until_complete(RealtimeServer().shutdown())

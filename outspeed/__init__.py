@@ -20,7 +20,7 @@ sentry_sdk.init(
 
 try:
     from .app import App  # noqa: F401
-    from .data import AudioData, ImageData, TextData  # noqa: F401
+    from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
     from .plugins.azure_tts import AzureTTS  # noqa: F401
@@ -31,9 +31,13 @@ try:
     from .plugins.groq_llm import GroqLLM  # noqa: F401
     from .plugins.token_aggregator import TokenAggregator  # noqa: F401
     from .streaming_endpoint import streaming_endpoint  # noqa: F401
-    from .streams import AudioStream, TextStream, VideoStream  # noqa: F401
+    from .streams import AudioStream, TextStream, VideoStream, VADStream  # noqa: F401
     from .web_endpoint import web_endpoint  # noqa: F401
     from .websocket import websocket  # noqa: F401
+    from .utils.clock import Clock  # noqa: F401
+    from .plugins.silero_vad import SileroVAD  # noqa: F401
+    from .utils.vad import VADState  # noqa: F401
+    from .plugins.whisper_stt import WhisperSTT  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -59,4 +63,10 @@ __all__ = [
     "AzureTTS",
     "ElevenLabsTTS",
     "FireworksLLM",
+    "Clock",
+    "SileroVAD",
+    "VADStream",
+    "SessionData",
+    "VADState",
+    "WhisperSTT",
 ]

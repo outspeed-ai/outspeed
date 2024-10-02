@@ -15,18 +15,7 @@ class Stream(asyncio.Queue):
         """Initialize the Stream with an empty list of clones."""
         super().__init__()
         self._clones: List[Stream] = []
-
-    async def put(self, item: Any) -> None:
-        """
-        Put an item in all queues of all instances asynchronously.
-
-        This method is a wrapper around put_nowait to maintain consistency
-        with the asyncio.Queue interface.
-
-        Args:
-            item (Any): The item to be added to the queue and all its clones.
-        """
-        self.put_nowait(item)
+        self._cache: List[Any] = []
 
     def put_nowait(self, item: Any) -> None:
         """
@@ -41,6 +30,43 @@ class Stream(asyncio.Queue):
         super().put_nowait(item)
         for clone in self._clones:
             clone.put_nowait(item)
+
+    def get_nowait(self) -> Any:
+        """
+        Get the first element from the queue without removing it.
+        """
+        if self._cache:
+            return self._cache.pop(0)
+        return super().get_nowait()
+
+    def get_first_element_without_removing(self) -> Any:
+        """
+        Get the first element from the queue without removing it.
+        """
+        if self._cache:
+            return self._cache[0]
+        try:
+            element = super().get_nowait()
+        except asyncio.QueueEmpty:
+            return None
+        self._cache.append(element)
+        return element
+
+    def get_element_at_index(self, index: int) -> Any:
+        """
+        Get the element at the given index without removing it.
+        """
+        while len(self._cache) <= index and super().qsize() > 0:
+            self._cache.append(super().get_nowait())
+        if index < len(self._cache):
+            return self._cache.pop(index)
+        return None
+
+    def qsize(self) -> int:
+        """
+        Get the number of elements in the queue.
+        """
+        return super().qsize() + len(self._cache)
 
 
 class AudioStream(Stream):
@@ -122,5 +148,36 @@ class ByteStream(Stream):
             ByteStream: A new ByteStream instance that is a clone of the current one.
         """
         clone = ByteStream()
+        self._clones.append(clone)
+        return clone
+
+
+class VADStream(Stream):
+    """
+    A specialized Stream for audio data.
+
+    This class extends the Stream class to handle audio-specific properties
+    such as sample rate.
+    """
+
+    type: str = "vad"
+
+    def __init__(self) -> None:
+        """
+        Initialize the AudioStream with a given sample rate.
+
+        Args:
+            sample_rate (int, optional): The sample rate of the audio stream. Defaults to 8000.
+        """
+        super().__init__()
+
+    def clone(self) -> "AudioStream":
+        """
+        Create a copy of this AudioStream.
+
+        Returns:
+            AudioStream: A new AudioStream instance that is a clone of the current one.
+        """
+        clone = VADStream()
         self._clones.append(clone)
         return clone

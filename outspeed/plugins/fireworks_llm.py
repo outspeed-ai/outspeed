@@ -7,8 +7,11 @@ from typing import Tuple
 from openai import AsyncOpenAI
 
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import TextStream
+from outspeed.streams import TextStream, VADStream
 from outspeed.utils import tracing
+
+from outspeed.utils.vad import VADState
+from outspeed.data import SessionData
 
 
 class FireworksLLM(Plugin):
@@ -45,6 +48,10 @@ class FireworksLLM(Plugin):
             while True:
                 text_chunk = await self.input_queue.get()
                 if text_chunk is None:
+                    continue
+
+                if isinstance(text_chunk, SessionData):
+                    await self.output_queue.put(text_chunk)
                     continue
                 self._generating = True
                 self._history.append({"role": "user", "content": text_chunk})
@@ -99,15 +106,24 @@ class FireworksLLM(Plugin):
 
     async def _interrupt(self):
         while True:
-            user_speaking = await self.interrupt_queue.get()
-            if self._generating and user_speaking:
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 self._task.cancel()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
                 logging.info("Done cancelling LLM")
                 self._generating = False
                 self._task = asyncio.create_task(self._stream_chat_completions())
 
-    async def set_interrupt(self, interrupt_queue: asyncio.Queue):
-        self.interrupt_queue = interrupt_queue
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
         self._interrupt_task = asyncio.create_task(self._interrupt())

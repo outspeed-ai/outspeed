@@ -32,7 +32,7 @@ Ideal for developing voice assistants, video analytics, and other real-time AI a
 You can install `outspeed` SDK from pypi using
 
 ```
-pip install outspeed
+pip install outspeed[silero]
 ```
 
 This would install the core `outspeed` package.
@@ -59,13 +59,13 @@ All the examples are available in the `examples` folder.
 To install the package so that all examples run, use:
 
 ```
-pip install 'outspeed[plugins,torch]'
+pip install 'outspeed[silero]'
 ```
 
 Or, if you're using poetry:
 
 ```
-poetry add 'outspeed[plugins,torch]'
+poetry add 'outspeed[silero]'
 ```
 
 This will install all the additional libraries that are required for examples to work.

@@ -1,8 +1,11 @@
 import asyncio
 from typing import List, Optional
+import logging
 
+from outspeed.data import SessionData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import TextStream
+from outspeed.streams import TextStream, VADStream
+from outspeed.utils.vad import VADState
 
 # Define sentence endings for token aggregation
 SENTENCE_ENDINGS: List[str] = [".", "!", "?", "\n"]
@@ -58,6 +61,9 @@ class TokenAggregator(Plugin):
                 continue
             if not token:
                 continue
+            if isinstance(token, SessionData):
+                await self.output_queue.put(token)
+                continue
             self.buffer += token
 
             # Find the last occurrence of any sentence ending
@@ -81,22 +87,32 @@ class TokenAggregator(Plugin):
         when an interrupt is received while the output queue is not empty.
         """
         while True:
-            user_speaking = await self.interrupt_queue.get()
-            if user_speaking and not self.output_queue.empty():
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (not self.output_queue.empty() or not self.input_queue.empty()):
                 self.buffer = ""
                 if self._task:
                     self._task.cancel()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
-                print("Done cancelling Token Aggregator")
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                logging.info("Done cancelling Token Aggregator")
                 self._task = asyncio.create_task(self._aggregate_tokens())
 
-    async def set_interrupt(self, interrupt_queue: asyncio.Queue) -> None:
+    def set_interrupt_stream(self, interrupt_stream: VADStream) -> None:
         """
         Set up the interrupt handling mechanism.
 
         Args:
-            interrupt_queue (asyncio.Queue): The queue to receive interrupt signals from.
+            interrupt_stream (VADStream): The stream to receive interrupt signals from.
         """
-        self.interrupt_queue = interrupt_queue
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
+
         self._interrupt_task = asyncio.create_task(self._interrupt())
