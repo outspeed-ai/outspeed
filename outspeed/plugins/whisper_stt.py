@@ -4,25 +4,24 @@ import asyncio
 import json
 import logging
 import os
+import websockets
 import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
-
-import aiohttp
 
 from outspeed.data import AudioData, SessionData
 from outspeed.plugins.base_plugin import Plugin
 from outspeed.streams import TextStream
 from outspeed.utils import tracing
+from pydub import AudioSegment
 
-# Constants for WebSocket messages
-_KEEPALIVE_MSG: str = json.dumps({"type": "KeepAlive"})
-_CLOSE_MSG: str = json.dumps({"type": "CloseStream"})
 
 logger = logging.getLogger(__name__)
+SENTENCE_TERMINATORS = [".", "!", "?", "\n", "\r"]
+WHISPER_SAMPLE_RATE = 16000
 
 
-class DeepgramSTT(Plugin):
+class WhisperSTT(Plugin):
     """
     A plugin for real-time speech-to-text using Deepgram's API.
 
@@ -33,18 +32,20 @@ class DeepgramSTT(Plugin):
     def __init__(
         self,
         *,
-        language: str = "en-US",
+        language: str = None,
         detect_language: bool = False,
         interim_results: bool = True,
         punctuate: bool = True,
         smart_format: bool = True,
-        model: str = "nova-2",
+        model: str = "distil-whisper/distil-small.en",
         api_key: Optional[str] = None,
         sample_rate: int = 16000,
         num_channels: int = 1,
         sample_width: int = 2,
         min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
+        base_url: Optional[str] = None,
+        vad_threshold: float = 0.5,
     ) -> None:
         """
         Initialize the DeepgramSTT plugin.
@@ -62,14 +63,24 @@ class DeepgramSTT(Plugin):
         :param min_silence_duration: The minimum duration of silence to trigger end of speech, in milliseconds.
         :param confidence_threshold: The minimum confidence score to accept a transcription.
         """
-        api_key = api_key or os.environ.get("DEEPGRAM_API_KEY")
+        api_key = api_key or os.environ.get("WHISPER_API_KEY")
         if api_key is None:
-            raise ValueError("Deepgram API key is required")
+            raise ValueError("Whisper API key is required")
+
+        if base_url is None:
+            raise ValueError("Whisper base URL is required")
+
+        if sample_rate != 16000 and sample_rate != 8000:
+            logging.error(f"Invalid sample rate: {sample_rate}. Whisper sample rate needs to be 16000 or 8000")
+            raise ValueError("Whisper sample rate needs to be 16000 or 8000")
+
         self._api_key: str = api_key
+        self.base_url: str = base_url
         self.language: str = language
         self.detect_language: bool = detect_language
         self.interim_results: bool = interim_results
         self.punctuate: bool = punctuate
+        self.vad_threshold: float = vad_threshold
         self.smart_format: bool = smart_format
         self.model: str = model
         self.min_silence_duration: int = min_silence_duration
@@ -81,24 +92,35 @@ class DeepgramSTT(Plugin):
         self._speaking: bool = False
         self.confidence_threshold: float = confidence_threshold
 
-        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
-
         self._closed: bool = False
         self.output_queue: TextStream = TextStream()
         self._audio_duration_received: float = 0.0
         self.input_queue: Optional[asyncio.Queue] = None
         self._task: Optional[asyncio.Task] = None
-        self._ws: Optional[aiohttp.ClientWebSocketResponse] = None
+        self._ws: Optional[websockets.WebSocketClientProtocol] = None
+        self._whisper_chunk_size = 512 if self._sample_rate == 16000 else 256
+        self._whisper_chunk_bytes = self._whisper_chunk_size * self._num_channels * 2
 
-    async def close(self) -> None:
-        """Close the Deepgram connection and clean up resources."""
-        if self.input_queue:
-            self.input_queue.put_nowait(_CLOSE_MSG)
-        await asyncio.sleep(0.2)
+    def resample_audio(self, audio_bytes: bytes) -> bytes:
+        if self._sample_rate == 16000:
+            return audio_bytes
 
-        await self._session.close()
-        if self._task:
-            self._task.cancel()
+        audio_segment = AudioSegment(
+            data=bytes(audio_bytes),
+            sample_width=2,  # Assuming 16-bit audio
+            frame_rate=self._sample_rate,  # Whisper sample rate
+            channels=1,
+        )
+
+        # Resample the audio to 16000 Hz
+        resampled_audio = audio_segment.set_frame_rate(WHISPER_SAMPLE_RATE)
+
+        # Convert the resampled audio back to bytes
+        data = resampled_audio.raw_data
+        if len(data) < 1024:
+            data += b"\0" * (1024 - len(data))
+
+        return data
 
     def run(self, input_queue: asyncio.Queue) -> TextStream:
         """
@@ -114,46 +136,32 @@ class DeepgramSTT(Plugin):
     async def _connect_ws(self) -> None:
         """Connect to the Deepgram WebSocket API."""
         live_config: Dict[str, Any] = {
-            "model": self.model,
-            "punctuate": self.punctuate,
-            "smart_format": self.smart_format,
-            "encoding": "linear16",
-            "sample_rate": self._sample_rate,
+            "model_name": self.model,
+            "sample_rate": WHISPER_SAMPLE_RATE,  # Whisper sample rate
             "channels": self._num_channels,
-            "endpointing": self.endpointing,
             "language": self.language,
+            "min_silence_ms": self.min_silence_duration,
+            "thresh": self.vad_threshold,
         }
 
-        headers = {"Authorization": f"Token {self._api_key}"}
+        # headers = {"Authorization": f"Token {self._api_key}"}
 
-        url = f"wss://api.deepgram.com/v1/listen?{urlencode(live_config).lower()}"
+        # url = f"{self.base_url}?{urlencode(live_config).lower()}"
+        url = self.base_url
         try:
-            self._ws = await self._session.ws_connect(url, headers=headers)
+            socket = await websockets.connect(url)
+            await socket.send(json.dumps(live_config))
+            self._ws = socket
         except Exception:
-            logger.error("Deepgram connection failed", exc_info=True)
+            logger.error("Whisper connection failed", exc_info=True)
             raise asyncio.CancelledError()
 
     async def _run_ws(self) -> None:
         """Run the main WebSocket communication loop with Deepgram."""
         try:
-            await asyncio.gather(self._keepalive_task(), self._send_task(), self._recv_task())
+            await asyncio.gather(self._send_task(), self._recv_task())
         except Exception:
-            logger.error("Deepgram task failed", exc_info=True)
-
-    async def _keepalive_task(self) -> None:
-        """
-        Send keepalive messages to maintain the WebSocket connection.
-
-        :param ws: The WebSocket connection to Deepgram.
-        """
-        try:
-            while True:
-                if self._ws:
-                    await self._ws.send_str(_KEEPALIVE_MSG)
-                await asyncio.sleep(5)
-        except Exception:
-            logger.error("Keepalive task failed", exc_info=True)
-            raise asyncio.CancelledError()
+            logger.error("Whisper task failed", exc_info=True)
 
     async def _send_task(self) -> None:
         """
@@ -162,27 +170,27 @@ class DeepgramSTT(Plugin):
         :param ws: The WebSocket connection to Deepgram.
         """
         try:
+            buffer = b""
             while True:
                 data: AudioData | SessionData = await self.input_queue.get()
                 if not self._ws:
                     await self._connect_ws()
-
-                if data == _CLOSE_MSG:
-                    self._closed = True
-                    await self._ws.send_str(data)
-                    break
 
                 if isinstance(data, SessionData):
                     await self.output_queue.put(data)
                     continue
 
                 bytes_data = data.get_bytes()
+                buffer += bytes_data
                 self._audio_duration_received += len(bytes_data) / (
                     self._sample_rate * self._num_channels * self._sample_width
                 )
-                await self._ws.send_bytes(bytes_data)
+                while len(buffer) >= self._whisper_chunk_bytes:
+                    resampled_buffer = self.resample_audio(buffer[: self._whisper_chunk_bytes])
+                    await self._ws.send(resampled_buffer)
+                    buffer = buffer[self._whisper_chunk_bytes :]
         except Exception:
-            logger.error("Deepgram send task failed", exc_info=True)
+            logger.error("Whisper send task failed", exc_info=True)
             raise asyncio.CancelledError()
 
     async def _recv_task(self) -> None:
@@ -192,35 +200,29 @@ class DeepgramSTT(Plugin):
         :param ws: The WebSocket connection to Deepgram.
         """
         try:
+            buffer = ""
             while True:
                 if not self._ws:
                     await asyncio.sleep(0.2)
                     continue
 
-                msg = await self._ws.receive()
-                if msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSING):
-                    if self._closed:
-                        return
-                    raise Exception("Deepgram connection closed unexpectedly")
+                try:
+                    msg = await asyncio.wait_for(self._ws.recv(), timeout=1)
+                except asyncio.TimeoutError:
+                    if buffer:
+                        await self.output_queue.put(buffer)
+                        buffer = ""
+                    continue
+                logger.info(f"Whisper msg: {msg}")
 
-                if msg.type != aiohttp.WSMsgType.TEXT:
-                    logger.error("Unexpected Deepgram message type %s", msg.type)
+                if not msg:
                     continue
 
-                data = json.loads(msg.data)
-                if "is_final" not in data:
-                    continue
-                is_final = data["is_final"]
-                top_choice = data["channel"]["alternatives"][0]
-                confidence = top_choice["confidence"]
-                audio_processed_duration = data["duration"] + data["start"]
-
-                if top_choice["transcript"] and confidence > self.confidence_threshold and is_final:
-                    logger.info("Deepgram transcript: %s", top_choice["transcript"])
-                    latency = self._audio_duration_received - audio_processed_duration
-                    tracing.register_event(tracing.Event.USER_SPEECH_END, time.time() - latency)
-                    tracing.register_event(tracing.Event.TRANSCRIPTION_RECEIVED)
-                    await self.output_queue.put(top_choice["transcript"])
+                if msg[-1] in SENTENCE_TERMINATORS:
+                    await self.output_queue.put(buffer + msg)
+                    buffer = ""
+                else:
+                    buffer += msg
         except Exception:
-            logger.error("Deepgram receive task failed", exc_info=True)
+            logger.error("Whisper receive task failed", exc_info=True)
             raise asyncio.CancelledError()

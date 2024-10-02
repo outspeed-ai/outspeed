@@ -13,8 +13,3 @@ class Clock:
     def get_playback_time(cls) -> float:
         cls.start_playback()
         return time.time() - cls.start_time
-
-    @classmethod
-    def increment_playback_time(cls, seconds: float):
-        cls.start_playback()
-        cls.start_time += seconds

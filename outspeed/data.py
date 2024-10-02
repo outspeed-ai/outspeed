@@ -2,7 +2,8 @@ import base64
 import fractions
 import io
 import time
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
+import uuid
 
 import numpy as np
 from av import AudioFrame, VideoFrame
@@ -28,6 +29,7 @@ class AudioData:
         sample_width: int = 2,
         format: str = "wav",
         relative_start_time: Optional[float] = None,
+        extra_tags: Dict[str, Any] = {},
     ):
         """
         Initialize an AudioData object.
@@ -51,6 +53,7 @@ class AudioData:
         self.channels: int = channels
         self.sample_width: int = sample_width
         self.format: str = format
+        self.extra_tags: Dict[str, Any] = extra_tags
         self.relative_start_time: float = relative_start_time or Clock.get_playback_time()
 
     def get_bytes(self) -> bytes:
@@ -118,7 +121,6 @@ class AudioData:
             ValueError: If the data format is invalid or unsupported.
         """
         if isinstance(self.data, AudioFrame):
-            self.data.pts = self.get_pts()
             return self.data
         elif isinstance(self.data, bytes):
             if len(self.data) < 2:
@@ -173,6 +175,7 @@ class ImageData:
         frame_rate: int = 30,
         format: str = "jpeg",
         relative_start_time: Optional[float] = None,
+        extra_tags: Dict[str, Any] = {},
     ):
         """
         Initialize an ImageData object.
@@ -196,6 +199,7 @@ class ImageData:
         self.height: int = height
         self.frame_rate: int = frame_rate
         self.format: str = format
+        self.extra_tags: Dict[str, Any] = extra_tags
         self.relative_start_time: float = relative_start_time or Clock.get_playback_time()
 
     def get_pts(self) -> int:
@@ -226,7 +230,10 @@ class ImageData:
         elif isinstance(self.data, np.ndarray):
             return VideoFrame.from_ndarray(self.data, format="rgb24")
         elif isinstance(self.data, Image.Image):
-            return VideoFrame.from_image(self.data)
+            image_frame = VideoFrame.from_image(self.data)
+            image_frame.pts = self.get_pts()
+            image_frame.time_base = fractions.Fraction(1, self.frame_rate)
+            return image_frame
         elif isinstance(self.data, VideoFrame):
             return self.data
         else:
@@ -274,3 +281,9 @@ class TextData:
         self.data: Optional[str] = data
         self.absolute_time: float = absolute_time or time.time()
         self.relative_time: float = relative_time or 0.0
+
+
+class SessionData:
+    def __init__(self, session_id: str = None, start_time: float = None):
+        self.session_id: str = session_id or str(uuid.uuid4())
+        self.start_time: float = start_time or time.time()

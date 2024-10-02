@@ -1,88 +1,127 @@
 import asyncio
-import os
+import logging
 import threading
+import time
 
-import numpy as np
-import torch
-
-# Brute force torchaudio to use ffmpeg 7, otherwise it will use ffmpeg 6 which causes issues on mac
-os.environ["TORIO_USE_FFMPEG_VERSION"] = "7"
-# Although torchaudio is not utilized directly in this context, it is necessary to attempt its import as it is a dependency for Silero.
-import torchaudio  # noqa: F401
-
+from outspeed.data import AudioData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.utils.cloneable_queue import CloneableQueue
+from outspeed.plugins.VAD.silero_model import SileroVADModel
+from outspeed.streams import AudioStream, VADStream
+from outspeed.utils.audio import calculate_audio_volume, exp_smoothing
+from outspeed.utils.vad import VADState
 
 
 class SileroVAD(Plugin):
     def __init__(
         self,
-        buffer_duration: float = 0.1,
-        audio_sample_rate: int = 8000,
-        sensitivity_threshold: float = 0.91,
+        sample_rate: int = 8000,
+        min_speech_duration_seconds: float = 0.2,
+        min_silence_duration_seconds: float = 0.25,
+        activation_threshold: float = 0.5,
+        min_volume: float = 0.6,
+        num_channels: int = 1,
     ):
-        if audio_sample_rate not in [8000, 16000]:
-            raise ValueError("Silero VAD only supports 8KHz and 16KHz sample rates")
+        self.model = SileroVADModel(sample_rate=sample_rate, num_channels=num_channels)
 
-        torch.set_num_threads(1)
-
-        (self.model, self.utils) = torch.hub.load(
-            repo_or_dir="snakers4/silero-vad", model="silero_vad", force_reload=False
-        )
-
-        self.buffer_duration = buffer_duration
-        self.audio_sample_rate = audio_sample_rate
-        self.buffer_samples = int(self.audio_sample_rate * self.buffer_duration)
-
-        self.sensitivity_threshold = sensitivity_threshold
+        self._sample_rate = sample_rate
+        self._activation_threshold = activation_threshold
 
         self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-        self.output_queue = CloneableQueue()
+        self.output_queue = VADStream()
         self.user_speaking = False
 
-    async def run(self, input_queue: CloneableQueue) -> CloneableQueue:
+        self._vad_buffer = b""
+        self._num_channels = num_channels
+
+        # Volume exponential smoothing
+        self._smoothing_factor = 0.2
+        self._prev_volume = 0
+        self._min_volume = min_volume
+
+        self._silero_chunk_size = 512 if self._sample_rate == 16000 else 256
+        self._silero_chunk_bytes = self._silero_chunk_size * self._num_channels * 2
+
+        self._min_speech_duration_seconds = min_speech_duration_seconds
+        self._min_silence_duration_seconds = min_silence_duration_seconds
+        self._speech_duration_seconds = 0
+        self._silence_duration_seconds = 0
+        self._vad_state = VADState.QUIET
+        self._prev_vad_state = VADState.QUIET
+
+        logging.info(
+            f"Initialized SileroVAD with sample rate: {sample_rate}, activation threshold: {activation_threshold}, min volume: {min_volume}"
+        )
+
+    def run(self, input_queue: AudioStream) -> VADStream:
         self.input_queue = input_queue
         self._vad_thread = threading.Thread(target=self.execute_vad, daemon=True)
         self._vad_thread.start()
+        logging.info("Starting SileroVAD execution")
         return self.output_queue
+
+    def _get_smoothed_volume(self, audio: bytes) -> float:
+        volume = calculate_audio_volume(audio, self._sample_rate)
+        return exp_smoothing(volume, self._prev_volume, self._smoothing_factor)
 
     def execute_vad(self):
         try:
-            buffer = None
+            asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
             while True:
                 future = asyncio.run_coroutine_threadsafe(self.input_queue.get(), self._loop)
-                audio_frame = future.result()
-                audio_data_int16 = audio_frame.to_ndarray()
-                audio_data_float32 = self.convert_int_to_float(audio_data_int16)
-                if buffer is None:
-                    buffer = audio_data_float32
-                else:
-                    buffer = np.concatenate((buffer, audio_data_float32))
+                audio_data: AudioData = future.result()
+                if audio_data is None or not isinstance(audio_data, AudioData):
+                    continue
+                buffer = audio_data.get_bytes()
+                self._vad_buffer += buffer
 
-                if buffer.shape[0] > self.buffer_samples:
-                    confidence_level = self.model(
-                        torch.from_numpy(buffer[: self.buffer_samples]), self.audio_sample_rate
-                    ).item()
-                    buffer = buffer[-self.buffer_samples :]
+                if len(self._vad_buffer) < self._silero_chunk_bytes:
+                    continue
 
-                    is_speaking = confidence_level > self.sensitivity_threshold
-                    if not is_speaking:
-                        self.user_speaking = False
-                    elif self._loop and is_speaking and not self.user_speaking:
-                        print("silero", is_speaking, confidence_level)
-                        self.user_speaking = True
-                        asyncio.run_coroutine_threadsafe(self.output_queue.put(is_speaking), self._loop)
-        except BaseException:
-            # This is triggered by an empty audio buffer
-            return False
+                while len(self._vad_buffer) >= self._silero_chunk_bytes:
+                    audio_frames = self._vad_buffer[: self._silero_chunk_bytes]
+                    self._vad_buffer = self._vad_buffer[self._silero_chunk_bytes :]
 
-    def convert_int_to_float(self, sound):
-        try:
-            maximum_absolute_value = np.abs(sound).max()
-            sound = sound.astype("float32")
-            if maximum_absolute_value > 0:
-                sound *= 1 / 32768
-            sound = sound.squeeze()  # Adjust based on specific needs
-            return sound
-        except ValueError:
-            return sound
+                    confidence = self.model.voice_confidence(audio_frames)
+
+                    volume = self._get_smoothed_volume(audio_frames)
+                    self._prev_volume = volume
+
+                    speaking = confidence >= self._activation_threshold and volume >= self._min_volume
+
+                    duration_seconds = self._get_speech_duration_seconds(audio_frames)
+                    if speaking:
+                        if self._vad_state == VADState.QUIET or self._vad_state == VADState.STOPPING:
+                            self._vad_state = VADState.STARTING
+                        self._speech_duration_seconds += duration_seconds
+                    else:
+                        if self._vad_state == VADState.STARTING or self._vad_state == VADState.SPEAKING:
+                            self._vad_state = VADState.STOPPING
+                        self._silence_duration_seconds += duration_seconds
+
+                    if (
+                        self._vad_state == VADState.STARTING
+                        and self._speech_duration_seconds >= self._min_speech_duration_seconds
+                    ):
+                        self._vad_state = VADState.SPEAKING
+                        self._speech_duration_seconds = 0
+                        self._silence_duration_seconds = 0
+                        logging.info("Speech detected, transitioning to SPEAKING state")
+
+                    elif (
+                        self._vad_state == VADState.STOPPING
+                        and self._silence_duration_seconds >= self._min_silence_duration_seconds
+                    ):
+                        self._vad_state = VADState.QUIET
+                        self._silence_duration_seconds = 0
+                        self._speech_duration_seconds = 0
+                        logging.info("Silence detected, transitioning to QUIET state")
+
+                    if self._vad_state != self._prev_vad_state:
+                        logging.info(f"VAD state: {self._vad_state}")
+                        self._prev_vad_state = self._vad_state
+                        asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
+        except Exception as e:
+            logging.error(f"Error in VAD execution: {str(e)}")
+
+    def _get_speech_duration_seconds(self, audio_frames: bytes) -> float:
+        return len(audio_frames) / (self._sample_rate * self._num_channels * 2)
