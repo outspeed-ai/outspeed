@@ -2,6 +2,7 @@ import asyncio
 import functools
 import inspect
 import logging
+import traceback
 from typing import Callable, List, Optional, Tuple, Union
 
 from outspeed._realtime_function import RealtimeFunction
@@ -87,7 +88,8 @@ def streaming_endpoint() -> Callable:
             except asyncio.CancelledError:
                 logging.error("streaming_endpoint: CancelledError")
             except Exception as e:
-                logging.error("Error in streaming_endpoint: ", e)
+                logging.error(f"Error in streaming_endpoint: {e}")
+                logging.error(f"Traceback:\n{traceback.format_exc()}")
             finally:
                 RealtimeServer().remove_connection()
                 tracing.end()
@@ -100,7 +102,7 @@ def streaming_endpoint() -> Callable:
                         task.cancel()
                         await task
                     except asyncio.CancelledError:
-                        logging.info("Task was cancelled")
+                        pass
 
         rt_func = RealtimeFunction(wrapper)
         return rt_func

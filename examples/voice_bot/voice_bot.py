@@ -54,9 +54,12 @@ class VoiceBot:
         self.tts_node = sp.CartesiaTTS(
             voice_id="95856005-0332-41b0-935f-352e296aa0df",
         )
+        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
 
         # Set up the AI service pipeline
         deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_queue)
+
+        vad_stream: sp.VADStream = self.vad_node.run(audio_input_queue.clone())
 
         text_input_queue = sp.map(text_input_queue, lambda x: json.loads(x).get("content"))
 
@@ -70,6 +73,10 @@ class VoiceBot:
 
         token_aggregator_stream: sp.TextStream = self.token_aggregator_node.run(llm_token_stream)
         tts_stream: sp.AudioStream = self.tts_node.run(token_aggregator_stream)
+
+        self.llm_node.set_interrupt_stream(vad_stream)
+        self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
+        self.tts_node.set_interrupt_stream(vad_stream.clone())
 
         return tts_stream
 
