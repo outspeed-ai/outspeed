@@ -20,6 +20,7 @@ _KEEPALIVE_MSG: str = json.dumps({"type": "KeepAlive"})
 _CLOSE_MSG: str = json.dumps({"type": "CloseStream"})
 
 logger = logging.getLogger(__name__)
+SENTENCE_TERMINATORS = [".", "!", "?", "\n", "\r"]
 
 
 class DeepgramSTT(Plugin):
@@ -45,6 +46,7 @@ class DeepgramSTT(Plugin):
         sample_width: int = 2,
         min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
+        max_silence_duration: int = 2,
         base_url: str = "wss://api.deepgram.com",
     ) -> None:
         """
@@ -91,6 +93,7 @@ class DeepgramSTT(Plugin):
         self._task: Optional[asyncio.Task] = None
         self._ws: Optional[aiohttp.ClientWebSocketResponse] = None
         self.base_url: str = base_url
+        self.max_silence_duration: int = max_silence_duration
 
     async def close(self) -> None:
         """Close the Deepgram connection and clean up resources."""
@@ -194,12 +197,18 @@ class DeepgramSTT(Plugin):
         :param ws: The WebSocket connection to Deepgram.
         """
         try:
+            buffer = ""
             while True:
                 if not self._ws:
                     await asyncio.sleep(0.2)
                     continue
-
-                msg = await self._ws.receive()
+                try:
+                    msg = await asyncio.wait_for(self._ws.receive(), timeout=self.max_silence_duration)
+                except asyncio.TimeoutError:
+                    if buffer:
+                        await self.output_queue.put(buffer)
+                        buffer = ""
+                    continue
                 if msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSING):
                     if self._closed:
                         return
@@ -222,7 +231,12 @@ class DeepgramSTT(Plugin):
                     latency = self._audio_duration_received - audio_processed_duration
                     tracing.register_event(tracing.Event.USER_SPEECH_END, time.time() - latency)
                     tracing.register_event(tracing.Event.TRANSCRIPTION_RECEIVED)
-                    await self.output_queue.put(top_choice["transcript"])
+                    if top_choice["transcript"][-1] in SENTENCE_TERMINATORS:
+                        await self.output_queue.put(buffer + top_choice["transcript"])
+                        buffer = ""
+                    else:
+                        buffer += top_choice["transcript"]
+                    # await self.output_queue.put(top_choice["transcript"])
         except Exception:
             logger.error("Deepgram receive task failed", exc_info=True)
             raise asyncio.CancelledError()
