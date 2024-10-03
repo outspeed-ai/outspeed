@@ -45,6 +45,7 @@ class DeepgramSTT(Plugin):
         sample_width: int = 2,
         min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
+        base_url: str = "wss://api.deepgram.com",
     ) -> None:
         """
         Initialize the DeepgramSTT plugin.
@@ -89,6 +90,7 @@ class DeepgramSTT(Plugin):
         self.input_queue: Optional[asyncio.Queue] = None
         self._task: Optional[asyncio.Task] = None
         self._ws: Optional[aiohttp.ClientWebSocketResponse] = None
+        self.base_url: str = base_url
 
     async def close(self) -> None:
         """Close the Deepgram connection and clean up resources."""
@@ -126,7 +128,7 @@ class DeepgramSTT(Plugin):
 
         headers = {"Authorization": f"Token {self._api_key}"}
 
-        url = f"wss://api.deepgram.com/v1/listen?{urlencode(live_config).lower()}"
+        url = f"{self.base_url}/v1/listen?{urlencode(live_config).lower()}"
         try:
             self._ws = await self._session.ws_connect(url, headers=headers)
         except Exception:
