@@ -38,6 +38,7 @@ try:
     from .plugins.silero_vad import SileroVAD  # noqa: F401
     from .utils.vad import VADState  # noqa: F401
     from .plugins.whisper_stt import WhisperSTT  # noqa: F401
+    from .plugins.openai_llm import OpenAILLM  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -69,4 +70,5 @@ __all__ = [
     "SessionData",
     "VADState",
     "WhisperSTT",
+    "OpenAILLM",
 ]
