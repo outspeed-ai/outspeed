@@ -67,7 +67,10 @@ configure_logging()
 try:
     from .app import App  # noqa: F401
     from .data import AudioData, ImageData, SessionData, TextData  # noqa: F401
+<<<<<<< HEAD
     from .ops.filter import filter  # noqa: F401
+=======
+>>>>>>> 8bb9cbf (fixes)
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
     from .plugins.azure_stt import AzureTranscriber  # noqa: F401
