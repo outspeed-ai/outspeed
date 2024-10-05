@@ -38,6 +38,7 @@ class GeminiVision(Plugin):
         self._history = []
         self._system_prompt = system_prompt
         self._temperature = temperature
+        self.chat_history_queue = TextStream()
         if self._system_prompt is not None:
             self._history.append({"role": "user", "parts": [self._system_prompt]})
         self.output_queue = TextStream()
@@ -136,7 +137,7 @@ class GeminiVision(Plugin):
             self._generating = False
             await self.output_queue.put(None)
 
-    async def run(self, input_queue: VideoStream) -> TextStream:
+    def run(self, input_queue: VideoStream) -> TextStream:
         self.input_queue = input_queue
         self._tasks = [asyncio.create_task(self._stream_chat_completions())]
         return self.output_queue, self.chat_history_queue

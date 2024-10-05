@@ -80,16 +80,13 @@ class KeyFrameDetector(Plugin):
             self.prev_frame1 = frame
             self.time_since_last_key_frame = time.time()
             return True
-        elif (
-            self._key_frame_max_time
-            and time.time() - self.time_since_last_key_frame > self._key_frame_max_time
-        ):
+        elif self._key_frame_max_time and time.time() - self.time_since_last_key_frame > self._key_frame_max_time:
             self.prev_frame1 = frame
             self.time_since_last_key_frame = time.time()
             return True
         return False
 
-    async def run(self, image_input_queue: asyncio.Queue) -> asyncio.Queue:
+    def run(self, image_input_queue: asyncio.Queue) -> asyncio.Queue:
         self.image_input_queue = image_input_queue
         self._tasks = [asyncio.create_task(self.process_video())]
         return self.output_queue
