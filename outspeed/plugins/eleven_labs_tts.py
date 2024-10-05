@@ -7,7 +7,7 @@ import aiohttp
 
 from outspeed.data import AudioData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import AudioStream, ByteStream, TextStream
+from outspeed.streams import AudioStream, TextStream
 from outspeed.utils import tracing
 from outspeed.data import SessionData
 
@@ -73,7 +73,7 @@ class ElevenLabsTTS(Plugin):
             raise ValueError(f"Unsupported output format: {self._output_format}")
 
         # Initialize output queue and state variables
-        self.output_queue = ByteStream()
+        self.output_queue = AudioStream()
         self._generating = False
         self.session: Optional[aiohttp.ClientSession] = None
         self._task: Optional[asyncio.Task] = None

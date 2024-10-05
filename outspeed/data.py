@@ -248,6 +248,25 @@ class ImageData:
         """
         return 1.0 / self.frame_rate
 
+    def get_pil_image(self) -> Image.Image:
+        """
+        Convert the image data to a PIL Image.
+
+        Returns:
+            Image.Image: The image data as a PIL Image object.
+        """
+        if isinstance(self.data, bytes):
+            pil_image = Image.open(io.BytesIO(self.data), formats=[self.format])
+            return pil_image
+        elif isinstance(self.data, np.ndarray):
+            return Image.fromarray(self.data)
+        elif isinstance(self.data, Image.Image):
+            return self.data
+        elif isinstance(self.data, VideoFrame):
+            return self.data.to_image()
+        else:
+            raise ValueError("VideoData data must be bytes, np.ndarray, PIL.Image.Image, or av.VideoFrame")
+
 
 class TextData:
     """

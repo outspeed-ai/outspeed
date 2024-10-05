@@ -25,10 +25,6 @@ def merge(input_queues: List[Stream]) -> Union[AudioStream, VideoStream, TextStr
     # Initialize the output queue
     output_queue: Union[AudioStream, VideoStream, TextStream, ByteStream] = None
 
-    # Check if all input queues are of the same type
-    if not all(isinstance(x, type(input_queues[0])) for x in input_queues):
-        raise ValueError("All input queues must be of the same type")
-
     # Determine the type of the output queue based on the input queue type
     if isinstance(input_queues[0], AudioStream):
         output_queue = AudioStream()

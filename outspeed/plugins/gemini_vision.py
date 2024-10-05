@@ -1,43 +1,53 @@
 import asyncio
 import json
 import logging
+import os
 import time
 from typing import Optional
 
 import google.generativeai as genai
 import PIL.PngImagePlugin  # Not used but needed to make Gemini API work with PIL  # noqa: F401
 
-from outspeed.plugins.vision_plugin import VisionPlugin
-from outspeed.streams import TextStream, VideoStream
+from outspeed.data import SessionData
+from outspeed.plugins.base_plugin import Plugin
+from outspeed.streams import TextStream, VideoStream, VADStream
+from outspeed.data import ImageData
+from outspeed.utils.vad import VADState
 
 logger = logging.getLogger(__name__)
 
 
-class GeminiVision(VisionPlugin):
+class GeminiVision(Plugin):
     def __init__(
         self,
         model: str = "gemini-1.5-flash-latest",
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         system_prompt: Optional[str] = None,
-        auto_respond: Optional[int] = None,
         temperature: float = 1.0,
-        wait_for_first_user_response: bool = False,
-        chat_history: bool = True,
+        store_image_history: bool = True,
+        stream: bool = True,
+        max_output_tokens: int = 75,
     ):
         super().__init__()
         self._model: str = model
+
+        api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        if api_key is None:
+            raise ValueError("GOOGLE API key is required")
+
+        genai.configure(api_key=api_key)
         self._client = genai.GenerativeModel(model)
         self._history = []
         self._system_prompt = system_prompt
         self._temperature = temperature
+        self.chat_history_queue = TextStream()
         if self._system_prompt is not None:
             self._history.append({"role": "user", "parts": [self._system_prompt]})
-        self._auto_respond = auto_respond
-        self.wait_for_first_user_response = wait_for_first_user_response
-        self._time_last_response = None
-        self.chat_history_queue = TextStream()
-        self._chat_history = chat_history
+        self.output_queue = TextStream()
+        self._store_image_history = store_image_history
+        self._stream = stream
+        self._max_output_tokens = max_output_tokens
         self._safety_settings = [
             {
                 "category": "HARM_CATEGORY_HARASSMENT",
@@ -58,91 +68,130 @@ class GeminiVision(VisionPlugin):
         ]
 
     async def _stream_chat_completions(self):
-        while True:
-            if self._auto_respond:
+        try:
+            while True:
+                prompt = await self.input_queue.get()
+                if prompt is None:
+                    continue
+
+                if isinstance(prompt, SessionData):
+                    await self.output_queue.put(prompt)
+                    continue
+
+                self._generating = True
+                start_time = time.time()
+                self._history.append(
+                    {
+                        "role": "user",
+                        "parts": [],
+                    }
+                )
+                if isinstance(prompt, ImageData):
+                    logger.info("GeminiVision prompt: %s", "image")
+                    content = prompt.get_pil_image()
+                    self._history[-1]["parts"].append(content)
+                    self.chat_history_queue.put_nowait(
+                        json.dumps(
+                            {
+                                "role": "user",
+                                "content": "Image",
+                            }
+                        )
+                    )
+                else:
+                    logger.info("GeminiVision prompt: %s", prompt)
+                    content = prompt
+                    self._history[-1]["parts"].append(content)
+                    self.chat_history_queue.put_nowait(
+                        json.dumps(
+                            {
+                                "role": "user",
+                                "content": content,
+                            }
+                        )
+                    )
+
                 try:
-                    prompt = await asyncio.wait_for(self.text_input_queue.get(), timeout=0.2)
-                except asyncio.TimeoutError:
-                    if (
-                        self._time_last_response is not None
-                        and time.time() - self._time_last_response < self._auto_respond
-                    ):
-                        continue
-                    prompt = ""
-            else:
-                prompt = await self.text_input_queue.get()
-            if prompt is None:
-                continue
-            if prompt == "" and self.image_input_queue.qsize() == 0:
-                continue
-            self._generating = True
-            start_time = time.time()
-            self._history.append(
-                {
-                    "role": "user",
-                    "parts": [],
-                }
-            )
-            if prompt != "":
-                self._history[-1]["parts"].append(prompt)
+                    response = await self._client.generate_content_async(
+                        self._history,
+                        stream=self._stream,
+                        generation_config=genai.types.GenerationConfig(
+                            max_output_tokens=self._max_output_tokens, temperature=self._temperature
+                        ),
+                        safety_settings=self._safety_settings,
+                    )
+                except Exception as e:
+                    logger.error("Google AI vision timeout %s", e)
+                    self._history.pop()
+                    continue
+
+                # if prompt != "":
+                #     self._history[-1]["parts"] = self._history[-1]["parts"][:1]
+                # else:
+                if not self._store_image_history:
+                    self._history.pop()
+                self._history.append({"role": "model", "parts": [""]})
+                logger.info("Google AI LLM TTFB: %s", time.time() - start_time)
+                if self._stream:
+                    async for chunk in response:
+                        if chunk:
+                            try:
+                                text = chunk.text
+                            except:
+                                continue
+                            self._history[-1]["parts"][0] += text
+                            await self.output_queue.put(text)
+                else:
+                    text = response.text
+                    self._history[-1]["parts"][0] += text
+                    await self.output_queue.put(text)
+                logger.info("llm %s", self._history[-1]["parts"][0])
                 self.chat_history_queue.put_nowait(
                     json.dumps(
                         {
-                            "role": "user",
-                            "content": prompt,
+                            "role": "assistant",
+                            "content": self._history[-1]["parts"][0],
                         }
                     )
                 )
-            if self.image_input_queue.qsize() > 0:
-                while self.image_input_queue.qsize() > 0:
-                    image = self.image_input_queue.get_nowait()
-                self._history[-1]["parts"].append(image[0])
-                logger.info("Google AI image %s", image[1])
+                if not self._store_image_history:
+                    self._history.pop()
+                self._generating = False
+                await self.output_queue.put(None)
+        except Exception as e:
+            logger.error("GeminiVision error %s", e)
+            raise asyncio.CancelledError()
 
-            try:
-                response = await self._client.generate_content_async(
-                    self._history,
-                    stream=True,
-                    generation_config=genai.types.GenerationConfig(max_output_tokens=75, temperature=self._temperature),
-                    safety_settings=self._safety_settings,
-                )
-            except Exception as e:
-                logger.error("Google AI vision timeout %s", e)
-                self._history.pop()
-                continue
-
-            # if prompt != "":
-            #     self._history[-1]["parts"] = self._history[-1]["parts"][:1]
-            # else:
-            if not self._chat_history:
-                self._history.pop()
-            self._history.append({"role": "model", "parts": [""]})
-            logger.info("Google AI LLM TTFB: %s", time.time() - start_time)
-            async for chunk in response:
-                if chunk:
-                    try:
-                        text = chunk.text
-                    except:
-                        continue
-                    self._history[-1]["parts"][0] += text
-                    await self.output_queue.put(text)
-            logger.info("llm %s", self._history[-1]["parts"][0])
-            self.chat_history_queue.put_nowait(
-                json.dumps(
-                    {
-                        "role": "assistant",
-                        "content": self._history[-1]["parts"][0],
-                    }
-                )
-            )
-            if not self._chat_history:
-                self._history.pop()
-            self._time_last_response = time.time()
-            self._generating = False
-            await self.output_queue.put(None)
-
-    async def run(self, text_input_queue: TextStream, image_input_queue: VideoStream) -> TextStream:
-        self.text_input_queue = text_input_queue
-        self.image_input_queue = image_input_queue
-        self._tasks = [asyncio.create_task(self._stream_chat_completions())]
+    def run(self, input_queue: VideoStream) -> TextStream:
+        self.input_queue = input_queue
+        self._task = asyncio.create_task(self._stream_chat_completions())
         return self.output_queue, self.chat_history_queue
+
+    async def close(self):
+        self._task.cancel()
+
+    async def _interrupt(self):
+        while True:
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (
+                not self.input_queue.empty() or not self.output_queue.empty() or self._generating
+            ):
+                self._task.cancel()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
+                while not self.output_queue.empty():
+                    self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                logging.info("Done cancelling LLM")
+                self._generating = False
+                self._task = asyncio.create_task(self._stream_chat_completions())
+
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
+        self._interrupt_task = asyncio.create_task(self._interrupt())

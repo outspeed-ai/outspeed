@@ -94,5 +94,7 @@ class RealtimeApp:
 
         finally:
             # Run teardown
-            loop.run_until_complete(self._user_cls_instance.teardown())
-            loop.run_until_complete(RealtimeServer().shutdown())
+            try:
+                loop.run_until_complete(self._user_cls_instance.teardown())
+            except Exception as e:
+                pass

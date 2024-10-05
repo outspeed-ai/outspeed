@@ -1,77 +1,56 @@
-import asyncio
 import logging
-import os
-from typing import Tuple
 
 logging.basicConfig(level=logging.ERROR)
 
-import realtime
-from realtime.plugins.deepgram_stt import DeepgramSTT
-from realtime.plugins.eleven_labs_tts import ElevenLabsTTS
-from realtime.plugins.openai_vision import OpenAIVision
-from realtime.plugins.token_aggregator import TokenAggregator
-from realtime.streams import AudioStream, VideoStream, Stream, TextStream, ByteStream
-from realtime.plugins.silero_vad import SileroVAD
-from realtime.plugins.audio_convertor import AudioConverter
+import outspeed as sp
 
 
-@realtime.App()
+@sp.App()
 class CookingAssistant:
     async def setup(self):
-        self.deepgram_node = DeepgramSTT(
-            api_key=os.environ.get("DEEPGRAM_API_KEY"), sample_rate=8000
-        )
-        self.openai_node = OpenAIVision(
-            api_key=os.environ.get("OPENAI_API_KEY"),
+        self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
+        self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.8, key_frame_max_time=20)
+        self.llm_node = sp.GeminiVision(
             system_prompt="You are a chef. Your job is to provide feedback and guide the user on how to cook a dish. First tell them the recipe and then guide them on how to cook it. Take into account previous responses for a smooth flow. Do not repeat yourself. Keep the output within 15 words.",
-            auto_respond=10,
-            wait_for_first_user_response=True,
+            temperature=0.9,
+            store_image_history=False,
+            model="gemini-1.5-flash",
+            max_output_tokens=30,
         )
-        self.token_aggregator_node = TokenAggregator()
-        self.elevenlabs_node = ElevenLabsTTS(
-            api_key=os.environ.get("ELEVEN_LABS_API_KEY")
-        )
-        self.silero_vad_node = SileroVAD()
-        self.audio_convertor_node = AudioConverter()
+        self.token_aggregator_node = sp.TokenAggregator()
+        self.tts_node = sp.CartesiaTTS(voice_id="5619d38c-cf51-4d8e-9575-48f61a280413")
+        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
 
-    @realtime.streaming_endpoint()
-    async def run(
-        self, audio_input_stream: AudioStream, video_input_stream: VideoStream
-    ) -> Tuple[Stream, ...]:
-        audio_input_stream_copy = await audio_input_stream.clone()
+    @sp.streaming_endpoint()
+    async def run(self, audio_input_stream: sp.AudioStream, video_input_stream: sp.VideoStream):
+        deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_stream)
+        vad_stream: sp.VADStream = self.vad_node.run(audio_input_stream.clone())
 
-        deepgram_stream: TextStream = await self.deepgram_node.run(audio_input_stream)
-        silero_vad_stream: TextStream = await self.silero_vad_node.run(
-            audio_input_stream_copy
-        )
-        openai_stream: TextStream
-        openai_stream, chat_history = await self.openai_node.run(
-            deepgram_stream, video_input_stream
-        )
-        token_aggregator_stream: TextStream = await self.token_aggregator_node.run(
-            openai_stream
-        )
-        elevenlabs_stream: ByteStream = await self.elevenlabs_node.run(
-            token_aggregator_stream
-        )
-        audio_stream: AudioStream = await self.audio_convertor_node.run(
-            elevenlabs_stream
-        )
+        key_frame_stream: sp.VideoStream = self.keyframe_node.run(video_input_stream)
 
-        await self.openai_node.set_interrupt(silero_vad_stream)
-        await self.elevenlabs_node.set_interrupt(await silero_vad_stream.clone())
-        await self.token_aggregator_node.set_interrupt(await silero_vad_stream.clone())
+        llm_input_stream = sp.merge([deepgram_stream, key_frame_stream])
 
-        return audio_stream, await video_input_stream.clone(), chat_history
+        llm_token_stream: sp.TextStream
+        chat_history_stream: sp.TextStream
+        llm_token_stream, chat_history_stream = self.llm_node.run(llm_input_stream)
+
+        token_aggregator_stream: sp.TextStream = self.token_aggregator_node.run(llm_token_stream)
+
+        tts_stream: sp.AudioStream = self.tts_node.run(token_aggregator_stream)
+
+        self.llm_node.set_interrupt_stream(vad_stream)
+        self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
+        self.tts_node.set_interrupt_stream(vad_stream.clone())
+        self.keyframe_node.set_interrupt_stream(vad_stream.clone())
+
+        return tts_stream, chat_history_stream
 
     async def teardown(self):
         await self.deepgram_node.close()
         await self.openai_node.close()
         await self.token_aggregator_node.close()
-        await self.elevenlabs_node.close()
-        await self.silero_vad_node.close()
-        await self.audio_convertor_node.close()
+        await self.tts_node.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(CookingAssistant().run())
+    CookingAssistant().start()
