@@ -28,11 +28,11 @@ numpy = "^1.26.4"
 scipy = "^1.13.1"
 pyloudnorm = "^0.1.1"
 pydub = "^0.25.1"
+google-generativeai = { version = "^0.5.3"}
 
 fal-client = { version = "^0.4.0", optional = true }
 elevenlabs = { version = "^1.2.0", optional = true }
 fireworks-ai = { version = "^0.14.0", optional = true }
-google-generativeai = { version = "^0.5.3", optional = true }
 opencv-python-headless = { version = "^4.10.0.82", optional = true }
 google-cloud-vision = { version = "^3.7.2", optional = true }
 torch = { version = "^2.3.0", optional = true }
