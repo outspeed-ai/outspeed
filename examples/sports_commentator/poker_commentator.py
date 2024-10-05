@@ -1,6 +1,4 @@
-import asyncio
 import logging
-from typing import Tuple
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,12 +9,12 @@ import outspeed as sp
 class PokerCommentator:
     async def setup(self):
         self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
-        self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.9, key_frame_max_time=20)
+        self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.8, key_frame_max_time=20)
         self.llm_node = sp.GeminiVision(
             system_prompt="You are a poker commentator. Your job is to provide useful and deep insights on the strategy. Use exclamation points to show excitement. Do not mention the pot size. Make sure to read the cards correctly. If no cards are shown then just say something to pass time. Keep the response short and concise.",
             temperature=0.9,
             store_image_history=False,
-            model="gemini-1.5-flash-8b",
+            model="gemini-1.5-flash",
             max_output_tokens=30,
         )
         self.token_aggregator_node = sp.TokenAggregator()
