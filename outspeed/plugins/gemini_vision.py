@@ -10,8 +10,9 @@ import PIL.PngImagePlugin  # Not used but needed to make Gemini API work with PI
 
 from outspeed.data import SessionData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import TextStream, VideoStream
+from outspeed.streams import TextStream, VideoStream, VADStream
 from outspeed.data import ImageData
+from outspeed.utils.vad import VADState
 
 logger = logging.getLogger(__name__)
 
@@ -163,5 +164,34 @@ class GeminiVision(Plugin):
 
     def run(self, input_queue: VideoStream) -> TextStream:
         self.input_queue = input_queue
-        self._tasks = [asyncio.create_task(self._stream_chat_completions())]
+        self._task = asyncio.create_task(self._stream_chat_completions())
         return self.output_queue, self.chat_history_queue
+
+    async def close(self):
+        self._task.cancel()
+
+    async def _interrupt(self):
+        while True:
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (
+                not self.input_queue.empty() or not self.output_queue.empty() or self._generating
+            ):
+                self._task.cancel()
+                try:
+                    await self._task
+                except asyncio.CancelledError:
+                    pass
+                while not self.output_queue.empty():
+                    self.output_queue.get_nowait()
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                logging.info("Done cancelling LLM")
+                self._generating = False
+                self._task = asyncio.create_task(self._stream_chat_completions())
+
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
+        self._interrupt_task = asyncio.create_task(self._interrupt())
