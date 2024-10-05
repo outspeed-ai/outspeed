@@ -1,17 +1,18 @@
 import asyncio
+import logging
 import time
 from collections import deque
 
+from outspeed.data import ImageData, SessionData
 from outspeed.plugins.base_plugin import Plugin
 from outspeed.streams import VideoStream
 from outspeed.utils.images import (
-    convert_yuv420_to_pil,
     image_hamming_distance,
 )
 
 
 class KeyFrameDetector(Plugin):
-    def __init__(self, key_frame_threshold=0.4, key_frame_max_time=10):
+    def __init__(self, key_frame_threshold=0.8, key_frame_max_time=10):
         super().__init__()
         self.video_frames_stack = deque(maxlen=1)
         self.prev_frame1 = None
@@ -22,32 +23,30 @@ class KeyFrameDetector(Plugin):
         self._key_frame_max_time = key_frame_max_time
 
     async def process_video(self):
-        i = 1
-        while True:
-            image = await self.image_input_queue.get()
-            while self.image_input_queue.qsize() > 0:
-                image = self.image_input_queue.get_nowait()
+        try:
+            while True:
+                image_data: ImageData = await self.image_input_queue.get()
 
-            pil_image = convert_yuv420_to_pil(image)
-            width, height = pil_image.size
+                if image_data is None:
+                    continue
 
-            # Setting the points for cropped image
-            left = 0
-            top = height / 2
-            right = width / 2
-            bottom = height
+                if isinstance(image_data, SessionData):
+                    self.output_queue.put(image_data)
+                    continue
 
-            # Cropped image of above dimension
-            # (It will not change original image)
-            im1 = pil_image.crop((left, top, right, bottom))
-            if not self._is_key_frame(im1):
-                continue
+                while self.image_input_queue.qsize() > 0:
+                    image_data: ImageData = self.image_input_queue.get_nowait()
 
-            await self.output_queue.put((im1, i))
-            # if not os.path.exists("data"):
-            #     os.makedirs("data")
-            # im1.save(f"data/{i}.jpeg")
-            i += 1
+                pil_image = image_data.get_pil_image()
+                width, height = pil_image.size
+
+                if not self._is_key_frame(pil_image):
+                    continue
+
+                await self.output_queue.put(ImageData(pil_image))
+        except Exception as e:
+            logging.error(f"Error in KeyFrameDetector: {e}")
+            raise asyncio.CancelledError()
 
     async def close(self):
         for task in self._tasks:
