@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outspeed"
-version = "0.1.141"
+version = "0.1.142"
 description = ""
 authors = ["Outspeed <contact@outspeed.ai>"]
 readme = "README.md"
@@ -28,7 +28,7 @@ numpy = "^1.26.4"
 scipy = "^1.13.1"
 pyloudnorm = "^0.1.1"
 pydub = "^0.25.1"
-google-generativeai = { version = "^0.5.3"}
+google-generativeai = "^0.7.0"
 
 fal-client = { version = "^0.4.0", optional = true }
 elevenlabs = { version = "^1.2.0", optional = true }
@@ -45,7 +45,6 @@ plugins = [
     "fal-client",
     "elevenlabs",
     "fireworks-ai",
-    "google-generativeai",
     "opencv-python-headless",
     "google-cloud-vision",
 ]
@@ -54,7 +53,6 @@ all = [
     "fal-client",
     "elevenlabs",
     "fireworks-ai",
-    "google-generativeai",
     "opencv-python-headless",
     "google-cloud-vision",
     "torch",
