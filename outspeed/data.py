@@ -10,6 +10,7 @@ from av import AudioFrame, VideoFrame
 from PIL import Image
 
 from outspeed.utils.clock import Clock
+from outspeed.utils.images import convert_yuv420_to_pil
 
 
 class AudioData:
@@ -263,9 +264,39 @@ class ImageData:
         elif isinstance(self.data, Image.Image):
             return self.data
         elif isinstance(self.data, VideoFrame):
-            return self.data.to_image()
+            return convert_yuv420_to_pil(self.data)
         else:
             raise ValueError("VideoData data must be bytes, np.ndarray, PIL.Image.Image, or av.VideoFrame")
+
+    def get_bytes(self, quality: int = 100) -> bytes:
+        """
+        Convert the image data to bytes.
+
+        Returns:
+            bytes: The image data as bytes.
+
+        Raises:
+            ValueError: If the data is not of type bytes or VideoFrame.
+        """
+        if isinstance(self.data, bytes):
+            return self.data
+        elif isinstance(self.data, VideoFrame):
+            return self.data.to_ndarray().tobytes()
+        elif isinstance(self.data, Image.Image):
+            with io.BytesIO() as buffer:
+                self.data.save(buffer, format=self.format, quality=quality)
+                return buffer.getvalue()
+        else:
+            raise ValueError("VideoData data must be bytes or av.VideoFrame")
+
+    def get_base64_url(self, quality: int = 100) -> str:
+        """
+        Encode the image data to base64.
+
+        Returns:
+                str: The base64 encoded image data as a string.
+        """
+        return f"data:image/{self.format};base64,{base64.b64encode(self.get_bytes(quality)).decode()}"
 
 
 class TextData:

@@ -62,7 +62,6 @@ class KeyFrameDetector(Plugin):
         if time.time() - self.time_since_last_key_frame < 1.0:
             return False
         d3 = image_euclidean_distance(self.prev_frame1, frame)
-        print(d3)
         if d3 >= self._key_frame_threshold:
             self.prev_frame1 = frame
             self.time_since_last_key_frame = time.time()
