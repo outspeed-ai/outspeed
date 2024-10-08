@@ -141,7 +141,7 @@ class OpenAIRealtime(Plugin):
                 },
             }
             if self.system_prompt:
-                session_update_msg["session"]["system_prompt"] = self.system_prompt
+                session_update_msg["session"]["instructions"] = self.system_prompt
 
             await self._ws.send(json.dumps(session_update_msg))
         except Exception as e:
