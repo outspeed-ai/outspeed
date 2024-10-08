@@ -19,7 +19,7 @@ class PokerCommentator:
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(voice_id="5619d38c-cf51-4d8e-9575-48f61a280413")
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0, min_speech_duration_seconds=0.05)
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_stream: sp.AudioStream, video_input_stream: sp.VideoStream):
