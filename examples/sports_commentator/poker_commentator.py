@@ -9,17 +9,17 @@ import outspeed as sp
 class PokerCommentator:
     async def setup(self):
         self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
-        self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.8, key_frame_max_time=20)
-        self.llm_node = sp.GeminiVision(
-            system_prompt="You are a poker commentator. Your job is to provide useful and deep insights on the strategy. Use exclamation points to show excitement. Do not mention the pot size. Make sure to read the cards correctly. If no cards are shown then just say something to pass time. Keep the response short and concise.",
+        self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.8, key_frame_max_time=15)
+        self.llm_node = sp.OpenAIVision(
+            system_prompt="You are a poker commentator. Use exclamation points to show excitement. Keep it high level. Keep the response short and concise. No special characters.",
             temperature=0.9,
             store_image_history=False,
-            model="gemini-1.5-flash",
-            max_output_tokens=30,
+            model="gpt-4o-mini",
+            max_output_tokens=50,
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(voice_id="5619d38c-cf51-4d8e-9575-48f61a280413")
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0, min_speech_duration_seconds=0.05)
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_stream: sp.AudioStream, video_input_stream: sp.VideoStream):
@@ -38,12 +38,14 @@ class PokerCommentator:
 
         tts_stream: sp.AudioStream = self.tts_node.run(token_aggregator_stream)
 
+        video_output_stream: sp.VideoStream = video_input_stream.clone()
+
         self.llm_node.set_interrupt_stream(vad_stream)
         self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
         self.tts_node.set_interrupt_stream(vad_stream.clone())
         self.keyframe_node.set_interrupt_stream(vad_stream.clone())
 
-        return tts_stream, chat_history_stream
+        return tts_stream, chat_history_stream, video_output_stream
 
     async def teardown(self):
         await self.deepgram_node.close()

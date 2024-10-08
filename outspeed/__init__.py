@@ -41,6 +41,7 @@ try:
     from .plugins.openai_llm import OpenAILLM  # noqa: F401
     from .plugins.key_frame_detector import KeyFrameDetector  # noqa: F401
     from .plugins.gemini_vision import GeminiVision  # noqa: F401
+    from .plugins.openai_vision import OpenAIVision  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -75,4 +76,5 @@ __all__ = [
     "OpenAILLM",
     "KeyFrameDetector",
     "GeminiVision",
+    "OpenAIVision",
 ]

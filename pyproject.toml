@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outspeed"
-version = "0.1.142"
+version = "0.1.143"
 description = ""
 authors = ["Outspeed <contact@outspeed.ai>"]
 readme = "README.md"
@@ -13,9 +13,9 @@ aiortc = "^1.8.0"
 click = "^8.1.7"
 dill = "^0.3.8"
 fastapi = "^0.110.2"
-python = ">=3.9 <3.12"                     # python 3.12 is not supported by aiortc
+python = ">=3.9 <4.0"
 requests = "^2.31.0"
-setuptools = "^69.5.1"                     # needed for aiortc
+setuptools = "^69.5.1"
 uvicorn = "^0.29.0"
 websockets = "^12.0"
 python-multipart = "^0.0.9"
@@ -39,6 +39,7 @@ torch = { version = "^2.3.0", optional = true }
 torchaudio = { version = "^2.3.0", optional = true }
 torchvision = { version = "^0.18.0", optional = true }
 silero-vad = { version = "^5.1", optional = true }
+dacite = "^1.8.1"
 
 [tool.poetry.extras]
 plugins = [
