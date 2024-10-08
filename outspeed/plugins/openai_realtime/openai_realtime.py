@@ -50,6 +50,7 @@ class OpenAIRealtime(Plugin):
         system_prompt: Optional[str] = None,
         temperature: float = 0.8,
         max_output_tokens: Optional[int] = None,
+        silence_duration_ms: int = 200,
     ):
         """
         Initialize the OpenAIRealtimeBasic plugin.
@@ -95,6 +96,7 @@ class OpenAIRealtime(Plugin):
         self.input_encoding = input_encoding
         self.temperature = temperature
         self.max_output_tokens = max_output_tokens
+        self.silence_duration_ms = silence_duration_ms
 
         self._initialize_handlers()
 
@@ -134,7 +136,7 @@ class OpenAIRealtime(Plugin):
                         "type": "server_vad",
                         "threshold": 0.5,
                         "prefix_padding_ms": 300,
-                        "silence_duration_ms": 200,
+                        "silence_duration_ms": self.silence_duration_ms,
                     },
                     "temperature": self.temperature,
                     "max_response_output_tokens": "inf" if self.max_output_tokens is None else self.max_output_tokens,
