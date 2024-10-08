@@ -51,6 +51,7 @@ class OpenAIRealtime(Plugin):
         temperature: float = 0.8,
         max_output_tokens: Optional[int] = None,
         silence_duration_ms: int = 200,
+        vad_threshold: float = 0.5,
     ):
         """
         Initialize the OpenAIRealtimeBasic plugin.
@@ -97,7 +98,7 @@ class OpenAIRealtime(Plugin):
         self.temperature = temperature
         self.max_output_tokens = max_output_tokens
         self.silence_duration_ms = silence_duration_ms
-
+        self.vad_threshold = vad_threshold
         self._initialize_handlers()
 
     def run(self, text_queue: TextStream, audio_queue: AudioStream) -> ByteStream:
@@ -134,7 +135,7 @@ class OpenAIRealtime(Plugin):
                     "input_audio_transcription": {"model": "whisper-1"},
                     "turn_detection": {
                         "type": "server_vad",
-                        "threshold": 0.5,
+                        "threshold": self.vad_threshold,
                         "prefix_padding_ms": 300,
                         "silence_duration_ms": self.silence_duration_ms,
                     },
