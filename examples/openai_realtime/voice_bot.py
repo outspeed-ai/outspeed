@@ -1,9 +1,26 @@
-import json
 import logging
 
 import outspeed as sp
-from outspeed.plugins.openai_realtime.openai_realtime_basic import OpenAIRealtimeBasic
 
+
+def check_outspeed_version():
+    import importlib.metadata
+
+    from packaging import version
+
+    required_version = "0.1.144"
+
+    try:
+        current_version = importlib.metadata.version("outspeed")
+        if version.parse(current_version) < version.parse(required_version):
+            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
+        else:
+            print(f"Outspeed version {current_version} meets the requirement.")
+    except importlib.metadata.PackageNotFoundError:
+        raise ValueError("Outspeed package is not installed.")
+
+
+check_outspeed_version()
 # Set up basic logging configuration
 logging.basicConfig(level=logging.INFO)
 
@@ -15,41 +32,12 @@ This tells the outspeed server which functions to run.
 
 @sp.App()
 class VoiceBot:
-    """
-    VoiceBot class represents a voice-based AI assistant.
-
-    This class handles the setup, running, and teardown of various AI services
-    used to process audio input, generate responses, and convert text to speech.
-    """
-
     async def setup(self) -> None:
-        """
-        Initialize the VoiceBot.
-
-        This method is called when the app starts. It should be used to set up
-        services, load models, and perform any necessary initialization.
-        """
-        pass
+        # Initialize the AI services
+        self.llm_node = sp.OpenAIRealtime()
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
-        """
-        Handle the main processing loop for the VoiceBot.
-
-        This method is called for each new connection request. It sets up and
-        runs the various AI services in a pipeline to process audio input and
-        generate audio output.
-
-        Args:
-            audio_input_queue (sp.AudioStream): The input stream of audio data.
-
-        Returns:
-            sp.AudioStream: The output stream of generated audio responses.
-        """
-        # Initialize the AI services
-        self.llm_node = OpenAIRealtimeBasic()
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
-
         # vad_stream = self.vad_node.run(audio_input_queue.clone())
         # Set up the AI service pipeline
         audio_output_stream: sp.AudioStream
@@ -69,7 +57,6 @@ class VoiceBot:
         It should be used to release resources and perform any necessary cleanup.
         """
         await self.llm_node.close()
-        await self.vad_node.close()
 
 
 if __name__ == "__main__":
