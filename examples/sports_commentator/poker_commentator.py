@@ -5,6 +5,26 @@ logging.basicConfig(level=logging.INFO)
 import outspeed as sp
 
 
+def check_outspeed_version():
+    import importlib.metadata
+
+    from packaging import version
+
+    required_version = "0.1.143"
+
+    try:
+        current_version = importlib.metadata.version("outspeed")
+        if version.parse(current_version) < version.parse(required_version):
+            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
+        else:
+            print(f"Outspeed version {current_version} meets the requirement.")
+    except importlib.metadata.PackageNotFoundError:
+        raise ValueError("Outspeed package is not installed.")
+
+
+check_outspeed_version()
+
+
 @sp.App()
 class PokerCommentator:
     async def setup(self):
