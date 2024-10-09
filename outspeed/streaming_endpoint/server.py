@@ -53,8 +53,20 @@ def offer(audio_driver, video_driver, text_driver):
 
             # avoid using relay.subscribe since it doesn't close properly when connection is stopped
             if track.kind == "audio":
+                if not audio_driver.audio_input_q:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Please check that the proper Audio and Video settings are enabled.",
+                    )
+
                 audio_driver.add_track(track)
             elif track.kind == "video":
+                if not video_driver.video_input_q:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Please check that the proper Audio and Video settings are enabled.",
+                    )
+
                 video_driver.add_track(track)
 
         try:
