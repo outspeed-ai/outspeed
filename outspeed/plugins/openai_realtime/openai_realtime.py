@@ -52,6 +52,7 @@ class OpenAIRealtime(Plugin):
         max_output_tokens: Optional[int] = None,
         silence_duration_ms: int = 200,
         vad_threshold: float = 0.5,
+        initiate_conversation_with_greeting: Optional[str] = None,
     ):
         """
         Initialize the OpenAIRealtimeBasic plugin.
@@ -99,6 +100,7 @@ class OpenAIRealtime(Plugin):
         self.max_output_tokens = max_output_tokens
         self.silence_duration_ms = silence_duration_ms
         self.vad_threshold = vad_threshold
+        self.initiate_conversation_with_greeting = initiate_conversation_with_greeting
         self._initialize_handlers()
 
     def run(self, text_queue: TextStream, audio_queue: AudioStream) -> ByteStream:
@@ -147,6 +149,20 @@ class OpenAIRealtime(Plugin):
                 session_update_msg["session"]["instructions"] = self.system_prompt
 
             await self._ws.send(json.dumps(session_update_msg))
+
+            if self.initiate_conversation_with_greeting:
+                await self._ws.send(
+                    json.dumps(
+                        {
+                            "type": "response.create",
+                            "response": {
+                                "modalities": ["text", "audio"],
+                                "instructions": "Say the following greeting to the user: "
+                                + self.initiate_conversation_with_greeting,
+                            },
+                        }
+                    )
+                )
         except Exception as e:
             logging.error("Error connecting to OpenAI Realtime: %s", e)
             logging.error(f"Traceback:\n{traceback.format_exc()}")
@@ -203,6 +219,9 @@ class OpenAIRealtime(Plugin):
                     msg = json.loads(response)
                     msg_type = msg.get("type")
 
+                    if msg_type in self._events_to_ignore:
+                        continue
+
                     handler = self._handlers.get(msg_type, self._handle_unknown)
                     await handler(msg)
             except Exception as e:
@@ -241,9 +260,6 @@ class OpenAIRealtime(Plugin):
             ServerEvent.SESSION_UPDATED: self._handle_session_updated,
             ServerEvent.CONVERSATION_CREATED: self._handle_conversation_created,
             ServerEvent.INPUT_AUDIO_BUFFER_SPEECH_STARTED: self._handle_speech_started,
-            ServerEvent.INPUT_AUDIO_BUFFER_SPEECH_STOPPED: self._handle_speech_stopped,
-            ServerEvent.INPUT_AUDIO_BUFFER_COMMITTED: self._handle_speech_committed,
-            ServerEvent.INPUT_AUDIO_BUFFER_CLEARED: self._handle_speech_cleared,
             ServerEvent.CONVERSATION_ITEM_CREATED: self._handle_conversation_item_created,
             ServerEvent.CONVERSATION_ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED: self._handle_transcription_completed,
             ServerEvent.CONVERSATION_ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED: self._handle_transcription_failed,
@@ -253,14 +269,23 @@ class OpenAIRealtime(Plugin):
             ServerEvent.RESPONSE_AUDIO_TRANSCRIPT_DELTA: self._handle_audio_transcript_delta,
             ServerEvent.RESPONSE_TEXT_DELTA: self._handle_text_delta,
             ServerEvent.RESPONSE_AUDIO_DELTA: self._handle_audio_delta,
-            ServerEvent.RESPONSE_AUDIO_DONE: self._handle_audio_done,
-            ServerEvent.RESPONSE_AUDIO_TRANSCRIPT_DONE: self._handle_audio_transcript_done,
-            ServerEvent.RESPONSE_CONTENT_PART_DONE: self._handle_content_part_done,
-            ServerEvent.RESPONSE_OUTPUT_ITEM_DONE: self._handle_output_item_done,
+            ServerEvent.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE: self._handle_function_call_arguments_done,
             ServerEvent.RESPONSE_DONE: self._handle_response_done,
-            ServerEvent.RATE_LIMITS_UPDATED: self._handle_rate_limits_updated,
             ServerEvent.ERROR: self._handle_error,
         }
+
+        self._events_to_ignore = [
+            ServerEvent.RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA,
+            ServerEvent.RATE_LIMITS_UPDATED,
+            ServerEvent.INPUT_AUDIO_BUFFER_SPEECH_STOPPED,
+            ServerEvent.INPUT_AUDIO_BUFFER_COMMITTED,
+            ServerEvent.INPUT_AUDIO_BUFFER_CLEARED,
+            ServerEvent.RESPONSE_TEXT_DONE,
+            ServerEvent.RESPONSE_AUDIO_DONE,
+            ServerEvent.RESPONSE_AUDIO_TRANSCRIPT_DONE,
+            ServerEvent.RESPONSE_CONTENT_PART_DONE,
+            ServerEvent.RESPONSE_OUTPUT_ITEM_DONE,
+        ]
 
     async def _handle_session_created(self, msg: SessionCreated):
         print(msg)
@@ -275,15 +300,6 @@ class OpenAIRealtime(Plugin):
     async def _handle_speech_started(self, msg: InputAudioBufferSpeechStarted):
         await self._interrupt()
 
-    async def _handle_speech_stopped(self, msg):
-        pass  # Implement your logic here
-
-    async def _handle_speech_committed(self, msg):
-        pass  # Implement your logic here
-
-    async def _handle_speech_cleared(self, msg):
-        pass  # Implement your logic here
-
     async def _handle_conversation_item_created(self, msg: ConversationItemCreated):
         self._session.add_item(msg)
 
@@ -291,7 +307,6 @@ class OpenAIRealtime(Plugin):
         logging.debug(f"Received response created: {msg}")
 
     async def _handle_transcription_completed(self, msg: ConversationItemInputAudioTranscriptionCompleted):
-        print(msg)
         self._session.add_input_audio_transcription(msg)
         print(self._session.get_items())
 
@@ -305,12 +320,10 @@ class OpenAIRealtime(Plugin):
         pass  # Implement your logic here
 
     async def _handle_audio_transcript_delta(self, msg: ResponseAudioTranscriptDelta):
-        return
-        self._session.update_transcript_delta(msg)
+        pass
 
     async def _handle_text_delta(self, msg: ResponseTextDeltaAdded):
-        return
-        self._session.update_text_delta(msg)
+        pass
 
     async def _handle_audio_delta(self, msg):
         audio = AudioData(
@@ -320,24 +333,12 @@ class OpenAIRealtime(Plugin):
         )
         await self.output_queue.put(audio)
 
-    async def _handle_audio_done(self, msg):
-        pass  # Implement your logic here
-
-    async def _handle_audio_transcript_done(self, msg):
+    async def _handle_function_call_arguments_done(self, msg):
         pass
-
-    async def _handle_content_part_done(self, msg):
-        pass  # Implement your logic here
-
-    async def _handle_output_item_done(self, msg):
-        pass  # Implement your logic here
 
     async def _handle_response_done(self, msg: ResponseDone):
         self._session.add_response(msg)
         print(self._session.get_items())
-
-    async def _handle_rate_limits_updated(self, msg):
-        pass  # Implement your logic here
 
     async def _handle_error(self, msg):
         raise Exception(f"Error: {msg}")

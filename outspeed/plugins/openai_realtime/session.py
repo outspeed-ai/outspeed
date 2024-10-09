@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Dict, List, Literal, Optional
 
 from outspeed.plugins.openai_realtime.types import (
@@ -15,6 +16,7 @@ from outspeed.plugins.openai_realtime.types import (
     SessionCreated,
     SessionUpdated,
 )
+from collections import OrderedDict
 
 
 class RealtimeSession:
@@ -43,8 +45,7 @@ class RealtimeSession:
         self.tool_choice = tool_choice
         self.temperature = temperature
         self.max_response_output_tokens = max_response_output_tokens
-        self.items: Dict[str, ConversationItem] = {}
-        self.responses: Dict[str, Response] = {}
+        self.items: OrderedDict[str, ConversationItem] = OrderedDict()
         self.conversations: List[Conversation] = []
 
     def session_update(
@@ -102,20 +103,28 @@ class RealtimeSession:
         self.items[data["item"]["id"]] = data["item"]
 
     def add_input_audio_transcription(self, data: ConversationItemInputAudioTranscriptionCompleted):
-        item = self.items[data["item_id"]]
+        item = self.items.get(data["item_id"])
+        if not item:
+            self.items[data["item_id"]] = {
+                "id": data["item_id"],
+                "object": "realtime.item",
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_audio",
+                        "audio": data["transcript"],
+                    }
+                ],
+            }
+            logging.error(f"Item {data['item_id']} not found")
+            return
+
         item["content"][data["content_index"]]["transcript"] = data["transcript"]
 
     def add_response(self, data: ResponseDone):
-        for item in data["response"]["output"]:
+        for item in data["response"].get("output", []):
             self.items[item["id"]] = item
-
-    def update_output_audio_transcript_delta(self, data: ResponseAudioTranscriptDelta):
-        item = self.items[data["item_id"]]
-        item["content"][data["content_index"]]["transcript"] += data["delta"]
-
-    def update_text_delta(self, data: ResponseTextDeltaAdded):
-        item = self.items[data["item_id"]]
-        item["content"][data["content_index"]]["text"] += data["delta"]
 
     def add_conversation(self, data: ConversationCreated):
         self.conversations.append(data["conversation"])
