@@ -22,7 +22,7 @@ def cli():
 @click.option("--base-url", required=False, help="Base URL of Outspeed's endpoint")
 def deploy(file_path, api_key, base_url):
     """Serializes a .py file and sends it to the specified backend server."""
-    BASE_URL = base_url or "https://infra.outspeed.ai"
+    BASE_URL = base_url or "https://infra.outspeed.com"
     endpoint = f"{BASE_URL}/deploy"
     api_key = api_key or os.getenv("OUTSPEED_API_KEY")
     if not api_key:
