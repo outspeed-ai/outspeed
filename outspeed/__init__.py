@@ -42,6 +42,7 @@ try:
     from .plugins.key_frame_detector import KeyFrameDetector  # noqa: F401
     from .plugins.gemini_vision import GeminiVision  # noqa: F401
     from .plugins.openai_vision import OpenAIVision  # noqa: F401
+    from .plugins.openai_realtime.openai_realtime import OpenAIRealtime  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -77,4 +78,5 @@ __all__ = [
     "KeyFrameDetector",
     "GeminiVision",
     "OpenAIVision",
+    "OpenAIRealtime",
 ]

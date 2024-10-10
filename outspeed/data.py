@@ -8,6 +8,7 @@ import uuid
 import numpy as np
 from av import AudioFrame, VideoFrame
 from PIL import Image
+from pydub import AudioSegment
 
 from outspeed.utils.clock import Clock
 from outspeed.utils.images import convert_yuv420_to_pil
@@ -158,6 +159,36 @@ class AudioData:
             return frame
         else:
             raise ValueError("AudioData data must be bytes or av.AudioFrame")
+
+    def resample(self, sample_rate: int) -> "AudioData":
+        """
+        Resample the audio data to a new sample rate.
+
+        Args:
+            sample_rate (int): The new sample rate in Hz.
+
+        Returns:
+            AudioData: The resampled audio data.
+        """
+        if self.sample_rate == sample_rate:
+            return self
+
+        audio_segment = AudioSegment(
+            data=self.get_bytes(),
+            sample_width=self.sample_width,
+            frame_rate=self.sample_rate,
+            channels=self.channels,
+        )
+
+        # Resample the audio to 16000 Hz
+        resampled_audio = audio_segment.set_frame_rate(sample_rate)
+
+        # Convert the resampled audio back to bytes
+        data = resampled_audio.raw_data
+
+        return AudioData(
+            data, sample_rate, self.channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
+        )
 
 
 class ImageData:
