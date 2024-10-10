@@ -34,7 +34,13 @@ def deploy(file_path, api_key, base_url):
         with open(file_path, "rb") as file:
             fmodule_content = file.read()
 
-            payload = {"module": fmodule_content, "metadata": {}}
+            payload = {
+                "module": fmodule_content,
+                "metadata": {
+                    # send the file name as the function name
+                    "name": os.path.basename(file_path),
+                },
+            }
             serialized_payload = dill.dumps(payload, recurse=True)
             headers = {"Content-Type": "application/octet-stream", "X-API-KEY": api_key}
             response = None
