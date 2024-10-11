@@ -1,8 +1,8 @@
+import pytest
 from enum import Enum
 from typing import List, Union
-from pydantic import BaseModel
 
-import pytest
+from pydantic import BaseModel
 
 from outspeed.tool import Tool
 
