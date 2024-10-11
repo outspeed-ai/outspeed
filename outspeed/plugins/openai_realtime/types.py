@@ -276,3 +276,14 @@ class ResponseDone(TypedDict):
     event_id: str
     type: Literal[ServerEvent.RESPONSE_DONE]
     response: Response
+
+
+class ResponseFunctionCallArgumentsDone(TypedDict):
+    event_id: str
+    type: Literal[ServerEvent.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE]
+    response_id: str
+    output_index: int
+    arguments: str
+    name: str
+    item_id: str
+    call_id: str

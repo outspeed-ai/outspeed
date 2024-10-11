@@ -11,6 +11,7 @@ from outspeed.plugins.openai_realtime.types import (
     InputAudioTranscription,
     ResponseAudioTranscriptDelta,
     ResponseDone,
+    ResponseFunctionCallArgumentsDone,
     ResponseTextDeltaAdded,
     ServerVad,
     SessionCreated,

@@ -4,15 +4,16 @@ import json
 import logging
 import os
 import traceback
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlencode
 
+from outspeed.tool import Tool
 import websockets
 
 from outspeed.data import AudioData, SessionData
 from outspeed.ops.merge import merge
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.plugins.openai_realtime.events import ServerEvent
+from outspeed.plugins.openai_realtime.events import ServerEvent, ClientEvent
 from outspeed.plugins.openai_realtime.session import RealtimeSession
 from outspeed.plugins.openai_realtime.types import (
     ConversationCreated,
@@ -22,6 +23,7 @@ from outspeed.plugins.openai_realtime.types import (
     ResponseAudioTranscriptDelta,
     ResponseContentPartAdded,
     ResponseDone,
+    ResponseFunctionCallArgumentsDone,
     ResponseTextDeltaAdded,
     SessionCreated,
     SessionUpdated,
@@ -53,6 +55,9 @@ class OpenAIRealtime(Plugin):
         silence_duration_ms: int = 200,
         vad_threshold: float = 0.5,
         initiate_conversation_with_greeting: Optional[str] = None,
+        tools: Optional[list[Tool]] = None,
+        tool_choice: str = "auto",
+        respond_to_tool_calls: bool = True,
     ):
         """
         Initialize the OpenAIRealtimeBasic plugin.
@@ -101,6 +106,9 @@ class OpenAIRealtime(Plugin):
         self.silence_duration_ms = silence_duration_ms
         self.vad_threshold = vad_threshold
         self.initiate_conversation_with_greeting = initiate_conversation_with_greeting
+        self.tools = tools
+        self.tool_choice = tool_choice
+        self.respond_to_tool_calls = respond_to_tool_calls
         self._initialize_handlers()
 
     def run(self, text_queue: TextStream, audio_queue: AudioStream) -> ByteStream:
@@ -128,7 +136,7 @@ class OpenAIRealtime(Plugin):
             self._ws = await websockets.connect(f"{self.base_url}?{urlencode(query_params)}", extra_headers=headers)
             logging.info("Connected to OpenAI Realtime")
             session_update_msg = {
-                "type": "session.update",
+                "type": ClientEvent.SESSION_UPDATE,
                 "session": {
                     "modalities": ["text", "audio"],
                     "voice": self.voice_id,
@@ -143,10 +151,19 @@ class OpenAIRealtime(Plugin):
                     },
                     "temperature": self.temperature,
                     "max_response_output_tokens": "inf" if self.max_output_tokens is None else self.max_output_tokens,
+                    "tool_choice": self.tool_choice,
                 },
             }
             if self.system_prompt:
                 session_update_msg["session"]["instructions"] = self.system_prompt
+
+            if self.tools:
+                session_update_msg["session"]["tools"] = []
+                for tool in self.tools:
+                    tool_json = tool.to_openai_tool_json()["function"]
+                    tool_json["type"] = "function"
+                    tool_json.pop("strict")
+                    session_update_msg["session"]["tools"].append(tool_json)
 
             await self._ws.send(json.dumps(session_update_msg))
 
@@ -192,7 +209,7 @@ class OpenAIRealtime(Plugin):
                         await self._ws.send(
                             json.dumps(
                                 {
-                                    "type": "input_audio_buffer.append",
+                                    "type": ClientEvent.INPUT_AUDIO_BUFFER_APPEND,
                                     "audio": text_chunk.resample(self.output_sample_rate).get_base64(),
                                 }
                             )
@@ -333,8 +350,34 @@ class OpenAIRealtime(Plugin):
         )
         await self.output_queue.put(audio)
 
-    async def _handle_function_call_arguments_done(self, msg):
-        pass
+    async def _handle_function_call_arguments_done(self, msg: ResponseFunctionCallArgumentsDone):
+        if not self.tools:
+            return
+
+        for tool in self.tools:
+            if tool.name == msg["name"]:
+                result = await tool._run_tool(
+                    {
+                        "id": msg["item_id"],
+                        "function": {"arguments": json.loads(msg["arguments"]), "name": msg["name"]},
+                    }
+                )
+                break
+
+        await self._ws.send(
+            json.dumps(
+                {
+                    "type": ClientEvent.CONVERSATION_ITEM_CREATE,
+                    "item": {
+                        "type": "function_call_output",
+                        "call_id": msg["call_id"],
+                        "output": result["content"],
+                    },
+                }
+            )
+        )
+        if self.respond_to_tool_calls:
+            await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE}))
 
     async def _handle_response_done(self, msg: ResponseDone):
         self._session.add_response(msg)
