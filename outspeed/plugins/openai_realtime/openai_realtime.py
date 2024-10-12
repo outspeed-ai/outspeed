@@ -144,17 +144,21 @@ class OpenAIRealtime(Plugin):
                     "input_audio_format": self.input_encoding,
                     "output_audio_format": self.output_encoding,
                     "input_audio_transcription": {"model": "whisper-1"},
-                    "turn_detection": {
-                        "type": "server_vad",
-                        "threshold": self.vad_threshold,
-                        "prefix_padding_ms": 300,
-                        "silence_duration_ms": self.silence_duration_ms,
-                    },
                     "temperature": self.temperature,
                     "max_response_output_tokens": "inf" if self.max_output_tokens is None else self.max_output_tokens,
                     "tool_choice": self.tool_choice,
                 },
             }
+            if self.turn_detection:
+                session_update_msg["session"]["turn_detection"] = {
+                    "type": "server_vad",
+                    "threshold": self.vad_threshold,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": self.silence_duration_ms,
+                }
+            else:
+                session_update_msg["session"]["turn_detection"] = None
+
             if self.system_prompt:
                 session_update_msg["session"]["instructions"] = self.system_prompt
 
