@@ -41,7 +41,6 @@ class Tool:
         return json
 
     async def _run_tool(self, function_json: dict):
-        print(function_json)
         if function_json["function"]["name"] != self.name:
             raise ValueError(f"Tool name mismatch: {function_json['name']} != {self.name}")
 
