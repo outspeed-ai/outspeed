@@ -90,7 +90,8 @@ class OpenAIRealtime(Plugin):
         self.model: str = model
         self.output_encoding: str = output_encoding
         self.output_sample_rate: int = output_sample_rate
-        self.output_queue: AudioStream = AudioStream()
+        self.audio_output_queue: AudioStream = AudioStream()
+        self.text_output_queue: TextStream = TextStream()
         self.base_url: str = base_url
         self._current_context_id: Optional[str] = None
         self._ws = None
@@ -125,7 +126,7 @@ class OpenAIRealtime(Plugin):
         self.audio_queue = audio_queue
         self.input_queue = merge([text_queue, audio_queue])
         self._task = asyncio.create_task(self.start_session())
-        return self.output_queue
+        return self.audio_output_queue, self.text_output_queue
 
     async def connect_websocket(self):
         headers = {"Authorization": f"Bearer {self.api_key}", "OpenAI-Beta": "realtime=v1"}
@@ -202,7 +203,7 @@ class OpenAIRealtime(Plugin):
                         first_chunk = False
 
                     if isinstance(text_chunk, SessionData):
-                        await self.output_queue.put(text_chunk)
+                        await self.audio_output_queue.put(text_chunk)
                         continue
 
                     if isinstance(text_chunk, AudioData):
@@ -235,7 +236,7 @@ class OpenAIRealtime(Plugin):
                 logging.error("Error sending text to OpenAI Realtime: %s", e)
                 logging.error(f"Traceback:\n{traceback.format_exc()}")
                 self._generating = False
-                await self.output_queue.put(None)
+                await self.audio_output_queue.put(None)
                 raise asyncio.CancelledError()
 
         async def receive_task():
@@ -260,7 +261,7 @@ class OpenAIRealtime(Plugin):
                 logging.error("Error receiving audio from OpenAI Realtime: %s", e)
                 logging.error(f"Traceback:\n{traceback.format_exc()}")
                 self._generating = False
-                await self.output_queue.put(None)
+                await self.audio_output_queue.put(None)
                 raise asyncio.CancelledError()
 
         try:
@@ -281,8 +282,8 @@ class OpenAIRealtime(Plugin):
         Handle interruptions (e.g., when the user starts speaking).
         Cancels ongoing TTS generation and clears the output queue.
         """
-        while not self.output_queue.empty():
-            self.output_queue.get_nowait()
+        while not self.audio_output_queue.empty():
+            self.audio_output_queue.get_nowait()
         logging.info("Done cancelling TTS")
 
     def _initialize_handlers(self):
@@ -339,8 +340,9 @@ class OpenAIRealtime(Plugin):
         logging.debug(f"Received response created: {msg}")
 
     async def _handle_transcription_completed(self, msg: ConversationItemInputAudioTranscriptionCompleted):
-        self._session.add_input_audio_transcription(msg)
-        print(self._session.get_items())
+        chat_msg = self._session.add_input_audio_transcription(msg)
+        logging.info(f"Transcription completed: {chat_msg}")
+        await self.text_output_queue.put(json.dumps(chat_msg))
 
     async def _handle_transcription_failed(self, msg):
         logging.error(f"Transcription failed: {msg}")
@@ -363,7 +365,7 @@ class OpenAIRealtime(Plugin):
             sample_rate=self.output_sample_rate,
             channels=1,
         )
-        await self.output_queue.put(audio)
+        await self.audio_output_queue.put(audio)
 
     async def _handle_function_call_arguments_done(self, msg: ResponseFunctionCallArgumentsDone):
         if not self.tools:
@@ -399,8 +401,11 @@ class OpenAIRealtime(Plugin):
             await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE}))
 
     async def _handle_response_done(self, msg: ResponseDone):
-        self._session.add_response(msg)
-        print(self._session.get_items())
+        print(msg)
+        chat_msgs = self._session.add_response(msg)
+        logging.info(f"Response done: {chat_msgs}")
+        for chat_msg in chat_msgs:
+            await self.text_output_queue.put(json.dumps(chat_msg))
 
     async def _handle_rate_limits_updated(self, msg):
         logging.info(f"Rate limits updated: {msg}")

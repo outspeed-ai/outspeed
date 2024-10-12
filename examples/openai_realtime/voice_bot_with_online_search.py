@@ -87,12 +87,12 @@ class VoiceBot:
         )
 
     @sp.streaming_endpoint()
-    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
+    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream):
         # Set up the AI service pipeline
         audio_output_stream: sp.AudioStream
-        audio_output_stream = self.llm_node.run(text_input_queue, audio_input_queue)
+        audio_output_stream, text_output_stream = self.llm_node.run(text_input_queue, audio_input_queue)
 
-        return audio_output_stream
+        return audio_output_stream, text_output_stream
 
     async def teardown(self) -> None:
         """
