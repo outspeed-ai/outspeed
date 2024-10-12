@@ -356,13 +356,17 @@ class OpenAIRealtime(Plugin):
 
         for tool in self.tools:
             if tool.name == msg["name"]:
-                result = await tool._run_tool(
-                    {
-                        "id": msg["item_id"],
-                        "function": {"arguments": json.loads(msg["arguments"]), "name": msg["name"]},
-                    }
-                )
-                break
+                try:
+                    result = await tool._run_tool(
+                        {
+                            "id": msg["item_id"],
+                            "function": {"arguments": json.loads(msg["arguments"]), "name": msg["name"]},
+                        }
+                    )
+                    break
+                except Exception as e:
+                    logging.error(f"Error calling tool {tool.name}: {e}")
+                    return
 
         await self._ws.send(
             json.dumps(
