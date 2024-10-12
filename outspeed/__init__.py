@@ -44,6 +44,7 @@ try:
     from .plugins.openai_vision import OpenAIVision  # noqa: F401
     from .plugins.openai_realtime.openai_realtime import OpenAIRealtime  # noqa: F401
     from .tool import Tool  # noqa: F401
+    from .server import RealtimeServer  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -81,4 +82,5 @@ __all__ = [
     "OpenAIVision",
     "OpenAIRealtime",
     "Tool",
+    "RealtimeServer",
 ]
