@@ -88,14 +88,9 @@ class VoiceBot:
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
-        # vad_stream = self.vad_node.run(audio_input_queue.clone())
         # Set up the AI service pipeline
         audio_output_stream: sp.AudioStream
         audio_output_stream = self.llm_node.run(text_input_queue, audio_input_queue)
-
-        # self.llm_node.set_interrupt_stream(vad_stream)
-        # self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
-        # self.tts_node.set_interrupt_stream(vad_stream.clone())
 
         return audio_output_stream
 
