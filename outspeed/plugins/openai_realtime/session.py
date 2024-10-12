@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 from typing import Dict, List, Literal, Optional
 
 from outspeed.plugins.openai_realtime.types import (
@@ -9,15 +10,11 @@ from outspeed.plugins.openai_realtime.types import (
     ConversationItemCreated,
     ConversationItemInputAudioTranscriptionCompleted,
     InputAudioTranscription,
-    ResponseAudioTranscriptDelta,
     ResponseDone,
-    ResponseFunctionCallArgumentsDone,
-    ResponseTextDeltaAdded,
     ServerVad,
     SessionCreated,
     SessionUpdated,
 )
-from collections import OrderedDict
 
 
 class RealtimeSession:
@@ -48,6 +45,7 @@ class RealtimeSession:
         self.max_response_output_tokens = max_response_output_tokens
         self.items: OrderedDict[str, ConversationItem] = OrderedDict()
         self.conversations: List[Conversation] = []
+        self._chat_history: List[Dict[str, str]] = []
 
     def session_update(
         self,
@@ -104,6 +102,7 @@ class RealtimeSession:
         self.items[data["item"]["id"]] = data["item"]
 
     def add_input_audio_transcription(self, data: ConversationItemInputAudioTranscriptionCompleted):
+        self._chat_history.append({"role": "user", "content": data["transcript"]})
         item = self.items.get(data["item_id"])
         if not item:
             self.items[data["item_id"]] = {
@@ -119,16 +118,30 @@ class RealtimeSession:
                 ],
             }
             logging.error(f"Item {data['item_id']} not found")
-            return
+            return self._chat_history[-1]
 
         item["content"][data["content_index"]]["transcript"] = data["transcript"]
+        return self._chat_history[-1]
 
     def add_response(self, data: ResponseDone):
+        responses = []
         for item in data["response"].get("output", []):
+            if item["type"] == "message":
+                content = item["content"][0]
+                if content["type"] == "text":
+                    self._chat_history.append({"role": "assistant", "content": content["text"]})
+                    responses.append({"role": "assistant", "content": content["text"]})
+                elif content["type"] == "audio":
+                    self._chat_history.append({"role": "assistant", "content": content["transcript"]})
+                    responses.append({"role": "assistant", "content": content["transcript"]})
             self.items[item["id"]] = item
+        return responses
 
     def add_conversation(self, data: ConversationCreated):
         self.conversations.append(data["conversation"])
 
     def get_items(self) -> List[ConversationItem]:
         return list(self.items.values())
+
+    def get_chat_history(self) -> List[Dict[str, str]]:
+        return self._chat_history
