@@ -4,16 +4,15 @@ import json
 import logging
 import os
 import traceback
-from typing import List, Optional
+from typing import Optional
 from urllib.parse import urlencode
 
-from outspeed.tool import Tool
 import websockets
 
 from outspeed.data import AudioData, SessionData
 from outspeed.ops.merge import merge
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.plugins.openai_realtime.events import ServerEvent, ClientEvent
+from outspeed.plugins.openai_realtime.events import ClientEvent, ServerEvent
 from outspeed.plugins.openai_realtime.session import RealtimeSession
 from outspeed.plugins.openai_realtime.types import (
     ConversationCreated,
@@ -29,6 +28,7 @@ from outspeed.plugins.openai_realtime.types import (
     SessionUpdated,
 )
 from outspeed.streams import AudioStream, ByteStream, TextStream
+from outspeed.tool import Tool
 
 
 class OpenAIRealtime(Plugin):
@@ -214,6 +214,21 @@ class OpenAIRealtime(Plugin):
                                 }
                             )
                         )
+
+                    if isinstance(text_chunk, str):
+                        await self._ws.send(
+                            json.dumps(
+                                {
+                                    "type": ClientEvent.CONVERSATION_ITEM_CREATE,
+                                    "item": {
+                                        "type": "message",
+                                        "role": "user",
+                                        "content": [{"type": "input_text", "text": text_chunk}],
+                                    },
+                                }
+                            )
+                        )
+                        await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE}))
 
                     self._generating = True
             except Exception as e:
