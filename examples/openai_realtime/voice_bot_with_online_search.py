@@ -1,6 +1,11 @@
 import logging
+import os
+
+from pydantic import BaseModel
 
 import outspeed as sp
+
+import aiohttp
 
 
 def check_outspeed_version():
@@ -8,7 +13,7 @@ def check_outspeed_version():
 
     from packaging import version
 
-    required_version = "0.1.144"
+    required_version = "0.1.147"
 
     try:
         current_version = importlib.metadata.version("outspeed")
@@ -30,11 +35,56 @@ This tells the outspeed server which functions to run.
 """
 
 
+class Query(BaseModel):
+    query: str
+
+
+class SearchResult(BaseModel):
+    result: str
+
+
+class SearchTool(sp.Tool):
+    async def run(self, query: Query) -> SearchResult:
+        url = "https://api.exa.ai/search"
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "x-api-key": os.getenv("EXA_API_KEY"),  # Ensure EXA_API_KEY is set in your environment
+        }
+        payload = {
+            "query": query.query,
+            "type": "neural",
+            "useAutoprompt": True,
+            "numResults": 1,
+            "contents": {"text": True},
+        }
+
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    data = await response.json()
+                    # Process the response data as needed
+                    return SearchResult(result=str(data.get("results", [{}])[0].get("text", "")))
+            except aiohttp.ClientError as e:
+                logging.error(f"HTTP request failed: {e}")
+                return SearchResult(result="An error occurred while processing the search request.")
+
+
 @sp.App()
 class VoiceBot:
     async def setup(self) -> None:
         # Initialize the AI services
-        self.llm_node = sp.OpenAIRealtime()
+        self.llm_node = sp.OpenAIRealtime(
+            tools=[
+                SearchTool(
+                    name="search",
+                    description="Search the web for information",
+                    parameters_type=Query,
+                    response_type=SearchResult,
+                )
+            ]
+        )
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
