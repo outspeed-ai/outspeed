@@ -304,11 +304,11 @@ class OpenAIRealtime(Plugin):
             ServerEvent.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE: self._handle_function_call_arguments_done,
             ServerEvent.RESPONSE_DONE: self._handle_response_done,
             ServerEvent.ERROR: self._handle_error,
+            ServerEvent.RATE_LIMITS_UPDATED: self._handle_rate_limits_updated,
         }
 
         self._events_to_ignore = [
             ServerEvent.RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA,
-            ServerEvent.RATE_LIMITS_UPDATED,
             ServerEvent.INPUT_AUDIO_BUFFER_SPEECH_STOPPED,
             ServerEvent.INPUT_AUDIO_BUFFER_COMMITTED,
             ServerEvent.INPUT_AUDIO_BUFFER_CLEARED,
@@ -401,6 +401,9 @@ class OpenAIRealtime(Plugin):
     async def _handle_response_done(self, msg: ResponseDone):
         self._session.add_response(msg)
         print(self._session.get_items())
+
+    async def _handle_rate_limits_updated(self, msg):
+        logging.info(f"Rate limits updated: {msg}")
 
     async def _handle_error(self, msg):
         raise Exception(f"Error: {msg}")
