@@ -27,8 +27,8 @@ class FireworksLLM(Plugin):
     ):
         super().__init__()
         self._model: str = model
-        api_key = api_key or os.environ.get("FIREWORKS_API_KEY")
-        if api_key is None:
+        api_key = api_key or os.getenv("FIREWORKS_API_KEY")
+        if not api_key:
             raise ValueError("Fireworks API key is required")
         self._api_key = api_key
         self._client = AsyncOpenAI(api_key=api_key, base_url="https://api.fireworks.ai/inference/v1")

@@ -49,8 +49,8 @@ class ElevenLabsTTS(Plugin):
         super().__init__()
 
         # Set up API key
-        self._api_key = api_key or os.environ.get("ELEVEN_LABS_API_KEY")
-        if self._api_key is None:
+        self._api_key = api_key or os.getenv("ELEVEN_LABS_API_KEY")
+        if not self._api_key:
             raise ValueError("Eleven Labs API key is required")
 
         # Store initialization parameters

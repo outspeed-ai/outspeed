@@ -46,8 +46,8 @@ class GroqLLM(Plugin):
         """
         super().__init__()
         self._model: str = model
-        self._api_key: str = api_key or os.environ.get("GROQ_API_KEY")
-        if self._api_key is None:
+        self._api_key: str = api_key or os.getenv("GROQ_API_KEY")
+        if not self._api_key:
             raise ValueError("Groq API key is required")
         self._client: AsyncOpenAI = AsyncOpenAI(api_key=self._api_key, base_url="https://api.groq.com/openai/v1")
         self._history: List[Dict[str, str]] = []

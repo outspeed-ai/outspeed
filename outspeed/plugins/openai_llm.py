@@ -27,8 +27,8 @@ class OpenAILLM(Plugin):
     ):
         super().__init__()
         self._model: str = model
-        api_key = api_key or os.environ.get("OPENAI_API_KEY")
-        if api_key is None:
+        api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not api_key:
             raise ValueError("OpenAI API key is required")
         self._api_key = api_key
         self._client = AsyncOpenAI(api_key=self._api_key, base_url=base_url)

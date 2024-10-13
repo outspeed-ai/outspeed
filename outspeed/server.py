@@ -45,8 +45,8 @@ class RealtimeServer:
         """
         self.app.add_api_route("/connections", self.get_connections, methods=["GET"])
         if (
-            os.environ.get("SSL_CERT_PATH")
-            and os.environ.get("SSL_KEY_PATH")
+            os.getenv("SSL_CERT_PATH")
+            and os.getenv("SSL_KEY_PATH")
             and os.path.exists(os.environ["SSL_CERT_PATH"])
             and os.path.exists(os.environ["SSL_KEY_PATH"])
         ):
