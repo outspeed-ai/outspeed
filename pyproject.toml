@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outspeed"
-version = "0.1.151"
+version = "0.1.153"
 description = ""
 authors = ["Outspeed <contact@outspeed.ai>"]
 readme = "README.md"
@@ -35,9 +35,9 @@ elevenlabs = { version = "^1.2.0", optional = true }
 fireworks-ai = { version = "^0.14.0", optional = true }
 opencv-python-headless = { version = "^4.10.0.82", optional = true }
 google-cloud-vision = { version = "^3.7.2", optional = true }
-torch = { version = "^2.3.0", optional = true }
-torchaudio = { version = "^2.3.0", optional = true }
-torchvision = { version = "^0.18.0", optional = true }
+torch = { version = "^2.2.0", optional = true }
+torchaudio = { version = "^2.2.0", optional = true }
+torchvision = { version = "^0.17.0", optional = true }
 silero-vad = { version = "^5.1", optional = true }
 dacite = "^1.8.1"
 python-dotenv = "^1.0.1"
