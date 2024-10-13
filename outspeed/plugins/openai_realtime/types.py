@@ -66,8 +66,8 @@ class Session(TypedDict):
     voice: SessionVoiceType
     input_audio_format: AudioFormatType
     output_audio_format: AudioFormatType
-    input_audio_transcription: InputAudioTranscription | None
-    turn_detection: ServerVad | None
+    input_audio_transcription: Optional[InputAudioTranscription]
+    turn_detection: Optional[ServerVad]
     tools: list[FunctionTool]
     tool_choice: ToolChoiceType
     temperature: float
@@ -114,7 +114,7 @@ class UserItem(TypedDict):
     object: Literal["realtime.item"]
     type: Literal["message"]
     role: Literal["user"]
-    content: list[InputTextContent | InputAudioContent]
+    content: list[Union[InputTextContent, InputAudioContent]]
 
 
 class AssistantItem(TypedDict):
@@ -122,7 +122,7 @@ class AssistantItem(TypedDict):
     object: Literal["realtime.item"]
     type: Literal["message"]
     role: Literal["assistant"]
-    content: list[TextContent | AudioContent]
+    content: list[Union[TextContent, AudioContent]]
 
 
 class FunctionCallItem(TypedDict):

@@ -6,7 +6,7 @@ import logging
 import os
 import websockets
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 from urllib.parse import urlencode
 
 from outspeed.data import AudioData, SessionData
@@ -172,7 +172,7 @@ class WhisperSTT(Plugin):
         try:
             buffer = b""
             while True:
-                data: AudioData | SessionData = await self.input_queue.get()
+                data: Union[AudioData, SessionData] = await self.input_queue.get()
                 if not self._ws:
                     await self._connect_ws()
 

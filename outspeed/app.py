@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, Callable, Type
+from typing import Any, Callable, Optional, Type
 
 from dotenv import load_dotenv
 
@@ -9,7 +9,7 @@ from outspeed._realtime_function import RealtimeFunction
 from outspeed.server import RealtimeServer
 
 
-def App(dotenv_path: str | None = ".env") -> Callable[[Type], Callable[..., "RealtimeApp"]]:
+def App(dotenv_path: Optional[str] = ".env") -> Callable[[Type], Callable[..., "RealtimeApp"]]:
     """
     Decorator factory for creating a RealtimeApp.
 
