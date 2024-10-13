@@ -1,7 +1,3 @@
-import logging
-
-logging.basicConfig(level=logging.ERROR)
-
 import outspeed as sp
 
 

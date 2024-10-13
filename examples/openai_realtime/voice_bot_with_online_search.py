@@ -26,8 +26,6 @@ def check_outspeed_version():
 
 
 check_outspeed_version()
-# Set up basic logging configuration
-logging.basicConfig(level=logging.INFO)
 
 """
 The @outspeed.App() decorator is used to wrap the VoiceBot class.

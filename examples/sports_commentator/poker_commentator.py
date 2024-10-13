@@ -1,7 +1,3 @@
-import logging
-
-logging.basicConfig(level=logging.INFO)
-
 import outspeed as sp
 
 

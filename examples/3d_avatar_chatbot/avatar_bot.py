@@ -1,9 +1,6 @@
 import json
-import logging
 
 import outspeed as sp
-
-logging.basicConfig(level=logging.INFO)
 
 
 @sp.App()

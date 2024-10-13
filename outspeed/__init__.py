@@ -18,6 +18,32 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
+import coloredlogs
+import logging
+
+
+def configure_logging(level=logging.INFO):
+    """
+    Configure the root logger with a coloredlogs that logs each message to console with a color based on its log level.
+
+    Args:
+        level (int): The log level to set for the root logger. Defaults to `logging.INFO`.
+    """
+
+    # By default the install() function installs a handler on the root logger,
+    # this means that log messages from your code and log messages from the
+    # libraries that you use will all show up on the terminal.
+    coloredlogs.install(level=level)
+
+    # If you don't want to see log messages from libraries, you can pass a
+
+    # specific logger object to the install() function. In this case only log
+    # messages originating from that logger will show up on the terminal.
+    # coloredlogs.install(level="DEBUG", logger=logger)
+
+
+configure_logging()
+
 try:
     from .app import App  # noqa: F401
     from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
@@ -54,6 +80,7 @@ except Exception:
     raise
 
 __all__ = [
+    "configure_logging",
     "streaming_endpoint",
     "App",
     "web_endpoint",
