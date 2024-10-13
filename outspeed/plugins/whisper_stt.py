@@ -63,11 +63,11 @@ class WhisperSTT(Plugin):
         :param min_silence_duration: The minimum duration of silence to trigger end of speech, in milliseconds.
         :param confidence_threshold: The minimum confidence score to accept a transcription.
         """
-        api_key = api_key or os.environ.get("WHISPER_API_KEY")
-        if api_key is None:
+        api_key = api_key or os.getenv("WHISPER_API_KEY")
+        if not api_key:
             raise ValueError("Whisper API key is required")
 
-        if base_url is None:
+        if not base_url:
             raise ValueError("Whisper base URL is required")
 
         if sample_rate != 16000 and sample_rate != 8000:

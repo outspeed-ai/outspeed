@@ -57,8 +57,8 @@ class CartesiaTTS(Plugin):
         self._interrupt_task: Optional[asyncio.Task] = None
 
         # Set up API key
-        self.api_key: str = api_key or os.environ.get("CARTESIA_API_KEY")
-        if self.api_key is None:
+        self.api_key: str = api_key or os.getenv("CARTESIA_API_KEY")
+        if not self.api_key:
             raise ValueError("Cartesia API key is required")
 
         # Set up TTS parameters

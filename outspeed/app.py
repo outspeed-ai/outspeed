@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Any, Callable, Type
 
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 
 from outspeed._realtime_function import RealtimeFunction
 from outspeed.server import RealtimeServer

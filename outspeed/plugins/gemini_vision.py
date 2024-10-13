@@ -32,8 +32,8 @@ class GeminiVision(Plugin):
         super().__init__()
         self._model: str = model
 
-        api_key = api_key or os.environ.get("GOOGLE_API_KEY")
-        if api_key is None:
+        api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        if not api_key:
             raise ValueError("GOOGLE API key is required")
 
         genai.configure(api_key=api_key)
