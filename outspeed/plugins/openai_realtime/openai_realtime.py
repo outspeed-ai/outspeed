@@ -403,7 +403,7 @@ class OpenAIRealtime(Plugin):
             )
         )
         if self.respond_to_tool_calls:
-            await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE, "response": {"tool_choice": "auto"}}))
+            await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE, "response": {"tool_choice": "none"}}))
 
     async def _handle_response_done(self, msg: ResponseDone):
         logging.info(f"Received response done: {msg} \n")
