@@ -18,6 +18,66 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
+import logging
+
+
+class ColorFormatter(logging.Formatter):
+    """
+    Colors each log message based on its log level. Uses Select Graphic Rendition escape sequences.
+    Wikipedia: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR
+    """
+
+    # foreground colors
+    grey = "\x1b[90m"
+    green = "\x1b[92m"
+    yellow = "\x1b[93m"
+    red = "\x1b[91m"
+    reset = "\x1b[0m"
+
+    # format string
+    format = "%(asctime)s | %(levelname)-5.5s | %(message)s"
+
+    # log level to color mapping
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: green + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: red + format + reset,
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno, self.format)
+        formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
+        return formatter.format(record)
+
+
+def configure_logging(level=logging.INFO):
+    """
+    Configure the root logger with a ColorFormatter that logs each message to the console with its log level.
+    Each log level is colored based on its severity.
+
+    Args:
+        level (int): The log level to set for the root logger. Defaults to `logging.INFO`.
+    """
+
+    # get the root logger & set the desired level
+    logger = logging.getLogger()
+    logger.setLevel(level)
+
+    # Create a stream handler
+    handler = logging.StreamHandler()
+    handler.setLevel(level)  # Set the handler level
+
+    # Set the custom formatter
+    handler.setFormatter(ColorFormatter())
+
+    # Add the handler to the root logger
+    logger.addHandler(handler)
+
+
+configure_logging()
+
 try:
     from .app import App  # noqa: F401
     from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
@@ -54,6 +114,7 @@ except Exception:
     raise
 
 __all__ = [
+    "configure_logging",
     "streaming_endpoint",
     "App",
     "web_endpoint",

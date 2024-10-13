@@ -1,15 +1,11 @@
 import asyncio
 import pytest
 import os
-import logging
 from pydub import AudioSegment
 
 from outspeed.data import AudioData
 from outspeed.plugins.silero_vad import SileroVAD, VADState
 from outspeed.streams import AudioStream, VADStream
-
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
