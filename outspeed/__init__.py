@@ -18,62 +18,28 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
+import coloredlogs
 import logging
-
-
-class ColorFormatter(logging.Formatter):
-    """
-    Colors each log message based on its log level. Uses Select Graphic Rendition escape sequences.
-    Wikipedia: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR
-    """
-
-    # foreground colors
-    grey = "\x1b[90m"
-    green = "\x1b[92m"
-    yellow = "\x1b[93m"
-    red = "\x1b[91m"
-    reset = "\x1b[0m"
-
-    # format string
-    format = "%(asctime)s | %(levelname)-5.5s | %(message)s"
-
-    # log level to color mapping
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: green + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: red + format + reset,
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno, self.format)
-        formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
-        return formatter.format(record)
 
 
 def configure_logging(level=logging.INFO):
     """
-    Configure the root logger with a ColorFormatter that logs each message to the console with its log level.
-    Each log level is colored based on its severity.
+    Configure the root logger with a coloredlogs that logs each message to console with a color based on its log level.
 
     Args:
         level (int): The log level to set for the root logger. Defaults to `logging.INFO`.
     """
 
-    # get the root logger & set the desired level
-    logger = logging.getLogger()
-    logger.setLevel(level)
+    # By default the install() function installs a handler on the root logger,
+    # this means that log messages from your code and log messages from the
+    # libraries that you use will all show up on the terminal.
+    coloredlogs.install(level=level)
 
-    # Create a stream handler
-    handler = logging.StreamHandler()
-    handler.setLevel(level)  # Set the handler level
+    # If you don't want to see log messages from libraries, you can pass a
 
-    # Set the custom formatter
-    handler.setFormatter(ColorFormatter())
-
-    # Add the handler to the root logger
-    logger.addHandler(handler)
+    # specific logger object to the install() function. In this case only log
+    # messages originating from that logger will show up on the terminal.
+    # coloredlogs.install(level="DEBUG", logger=logger)
 
 
 configure_logging()
