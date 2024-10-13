@@ -1,18 +1,28 @@
 import asyncio
 import logging
+import os
 from typing import Any, Callable, Type
+
+from dotenv import load_dotenv, dotenv_values
 
 from outspeed._realtime_function import RealtimeFunction
 from outspeed.server import RealtimeServer
 
 
-def App() -> Callable[[Type], Callable[..., "RealtimeApp"]]:
+def App(dotenv_path: str | None = ".env") -> Callable[[Type], Callable[..., "RealtimeApp"]]:
     """
     Decorator factory for creating a RealtimeApp.
+
+    Args:
+        dotenv_path (str | None): The path to the .env file to load variables from. Defaults to ".env".
 
     Returns:
         A decorator function that wraps a user-defined class.
     """
+
+    if dotenv_path and os.path.exists(dotenv_path):
+        logging.info(f"Loading variables from {dotenv_path} file...")
+        load_dotenv(dotenv_path=dotenv_path, override=True)
 
     def wrapper(user_cls: Type) -> Callable[..., "RealtimeApp"]:
         def construct(*args: Any, **kwargs: Any) -> "RealtimeApp":
