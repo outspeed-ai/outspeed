@@ -144,17 +144,21 @@ class OpenAIRealtime(Plugin):
                     "input_audio_format": self.input_encoding,
                     "output_audio_format": self.output_encoding,
                     "input_audio_transcription": {"model": "whisper-1"},
-                    "turn_detection": {
-                        "type": "server_vad",
-                        "threshold": self.vad_threshold,
-                        "prefix_padding_ms": 300,
-                        "silence_duration_ms": self.silence_duration_ms,
-                    },
                     "temperature": self.temperature,
                     "max_response_output_tokens": "inf" if self.max_output_tokens is None else self.max_output_tokens,
                     "tool_choice": self.tool_choice,
                 },
             }
+            if self.turn_detection:
+                session_update_msg["session"]["turn_detection"] = {
+                    "type": "server_vad",
+                    "threshold": self.vad_threshold,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": self.silence_duration_ms,
+                }
+            else:
+                session_update_msg["session"]["turn_detection"] = None
+
             if self.system_prompt:
                 session_update_msg["session"]["instructions"] = self.system_prompt
 
@@ -172,7 +176,7 @@ class OpenAIRealtime(Plugin):
                 await self._ws.send(
                     json.dumps(
                         {
-                            "type": "response.create",
+                            "type": ClientEvent.RESPONSE_CREATE,
                             "response": {
                                 "modalities": ["text", "audio"],
                                 "instructions": "Say the following greeting to the user: "
@@ -284,7 +288,7 @@ class OpenAIRealtime(Plugin):
         """
         while not self.audio_output_queue.empty():
             self.audio_output_queue.get_nowait()
-        logging.info("Done cancelling TTS")
+        logging.info("Done cancelling TTS generation \n")
 
     def _initialize_handlers(self):
         """Initialize the dispatch table for handling different message types."""
@@ -321,7 +325,6 @@ class OpenAIRealtime(Plugin):
         ]
 
     async def _handle_session_created(self, msg: SessionCreated):
-        print(msg)
         self._session = RealtimeSession.from_dict(msg)
 
     async def _handle_session_updated(self, msg: SessionUpdated):
@@ -337,15 +340,15 @@ class OpenAIRealtime(Plugin):
         self._session.add_item(msg)
 
     async def _handle_response_created(self, msg):
-        logging.debug(f"Received response created: {msg}")
+        logging.debug(f"Received response created: {msg} \n")
 
     async def _handle_transcription_completed(self, msg: ConversationItemInputAudioTranscriptionCompleted):
         chat_msg = self._session.add_input_audio_transcription(msg)
-        logging.info(f"Transcription completed: {chat_msg}")
+        logging.info(f"Transcription completed: {chat_msg} \n")
         await self.text_output_queue.put(json.dumps(chat_msg))
 
     async def _handle_transcription_failed(self, msg):
-        logging.error(f"Transcription failed: {msg}")
+        logging.error(f"Transcription failed: {msg} \n")
 
     async def _handle_output_item_added(self, msg):
         pass  # Implement your logic here
@@ -374,15 +377,17 @@ class OpenAIRealtime(Plugin):
         for tool in self.tools:
             if tool.name == msg["name"]:
                 try:
+                    logging.info(f"Calling tool {tool.name} with arguments: {msg['arguments']} \n")
                     result = await tool._run_tool(
                         {
                             "id": msg["item_id"],
                             "function": {"arguments": json.loads(msg["arguments"]), "name": msg["name"]},
                         }
                     )
+                    logging.info(f"Tool {tool.name} returned: {result} \n")
                     break
                 except Exception as e:
-                    logging.error(f"Error calling tool {tool.name}: {e}")
+                    logging.error(f"Error calling tool {tool.name}: {e} \n")
                     return
 
         await self._ws.send(
@@ -398,20 +403,20 @@ class OpenAIRealtime(Plugin):
             )
         )
         if self.respond_to_tool_calls:
-            await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE}))
+            await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CREATE, "response": {"tool_choice": "none"}}))
 
     async def _handle_response_done(self, msg: ResponseDone):
-        print(msg)
+        logging.info(f"Received response done: {msg} \n")
         chat_msgs = self._session.add_response(msg)
-        logging.info(f"Response done: {chat_msgs}")
+        logging.info(f"Response done: {chat_msgs} \n")
         for chat_msg in chat_msgs:
             await self.text_output_queue.put(json.dumps(chat_msg))
 
     async def _handle_rate_limits_updated(self, msg):
-        logging.info(f"Rate limits updated: {msg}")
+        logging.debug(f"Rate limits updated: {msg}\n")
 
     async def _handle_error(self, msg):
         raise Exception(f"Error: {msg}")
 
     async def _handle_unknown(self, msg):
-        logging.error("Unknown response type in OpenAI Realtime: %s", msg)
+        logging.error("Unknown response type in OpenAI Realtime: %s \n", msg)
