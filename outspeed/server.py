@@ -81,7 +81,7 @@ class RealtimeServer:
                 )
             )
 
-            await self.server.serve()
+        await self.server.serve()
 
     async def get_connections(self) -> Dict[str, List[str]]:
         """
