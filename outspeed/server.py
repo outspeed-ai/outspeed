@@ -1,6 +1,7 @@
 import logging
 import os
 import ssl
+import socket
 from typing import Dict, List, Optional
 
 import uvicorn
@@ -66,6 +67,11 @@ class RealtimeServer:
             # Local server
             self.app.add_api_route("/", self.get_local_offer_url, methods=["GET"])
             logging.info(f"Local server detected. Use http://{self.HOSTNAME}:{self.PORT}/ as Function URL.")
+
+            while is_port_in_use(self.HOSTNAME, self.PORT):
+                logging.info(f"Port {self.PORT} is in use. Trying next port...")
+                self.PORT += 1
+
             self.server = uvicorn.Server(
                 config=uvicorn.Config(
                     self.app,
@@ -74,6 +80,7 @@ class RealtimeServer:
                     log_level="info",
                 )
             )
+
         await self.server.serve()
 
     async def get_connections(self) -> Dict[str, List[str]]:
@@ -113,3 +120,20 @@ class RealtimeServer:
         Shutdown the server.
         """
         await self.server.shutdown()
+
+
+def is_port_in_use(host: str, port: str):
+    """
+    Test if a port is in use. Uses `socket.connect_ex()` to check if it was
+    able to connect to the given host and port or not.
+
+    Args:
+        host (str): The host to test.
+        port (str): The port to test.
+
+    Returns:
+        bool: True if the port is in use, False otherwise.
+    """
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        return sock.connect_ex((host, port)) == 0
