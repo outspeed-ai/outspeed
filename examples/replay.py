@@ -1,10 +1,4 @@
-import asyncio
-import logging
-from typing import Tuple
-
 import outspeed as sp
-
-logging.basicConfig(level=logging.INFO)
 
 """
 Wrapping your class with @outspeed.App() will tell the outspeed server which functions to run.
