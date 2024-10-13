@@ -65,8 +65,8 @@ class DeepgramSTT(Plugin):
         :param min_silence_duration: The minimum duration of silence to trigger end of speech, in milliseconds.
         :param confidence_threshold: The minimum confidence score to accept a transcription.
         """
-        api_key = api_key or os.environ.get("DEEPGRAM_API_KEY")
-        if api_key is None:
+        api_key = api_key or os.getenv("DEEPGRAM_API_KEY")
+        if not api_key:
             raise ValueError("Deepgram API key is required")
         self._api_key: str = api_key
         self.language: str = language
