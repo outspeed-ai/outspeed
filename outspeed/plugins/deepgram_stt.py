@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 from urllib.parse import urlencode
 
 import aiohttp
@@ -168,7 +168,7 @@ class DeepgramSTT(Plugin):
         """
         try:
             while True:
-                data: AudioData | SessionData = await self.input_queue.get()
+                data: Union[AudioData, SessionData] = await self.input_queue.get()
                 if not self._ws:
                     await self._connect_ws()
 
