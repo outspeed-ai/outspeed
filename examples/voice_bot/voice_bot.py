@@ -1,10 +1,6 @@
 import json
-import logging
 
 import outspeed as sp
-
-# Set up basic logging configuration
-logging.basicConfig(level=logging.INFO)
 
 """
 The @outspeed.App() decorator is used to wrap the VoiceBot class.

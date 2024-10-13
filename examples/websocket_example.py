@@ -1,9 +1,4 @@
-import json
-import logging
-
 import outspeed as sp
-
-logging.basicConfig(level=logging.INFO)
 
 
 @sp.App()
@@ -22,14 +17,13 @@ class WebsocketVoiceBot:
         self.deepgram_node = sp.DeepgramSTT(sample_rate=48000)
         self.llm_node = sp.FireworksLLM(
             system_prompt="You are a helpful assistant who answers questions about Outspeed. Outspeed builds tooling and infrastructure for Realtime AI applications.",
-            temperature=0.9
+            temperature=0.9,
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.ElevenLabsTTS(stream=True)
 
     @sp.websocket()
     async def run(self, audio_input_stream: sp.AudioStream, text_input_stream: sp.TextStream) -> sp.AudioStream:
-
         deepgram_stream = self.deepgram_node.run(audio_input_stream)
 
         llm_input_queue: sp.TextStream = sp.merge(
