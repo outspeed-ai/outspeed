@@ -6,6 +6,7 @@ import requests
 
 
 @click.group()
+@click.version_option(message="%(prog)s version %(version)s", help="Show the version of the SDK.")
 def cli():
     """A CLI tool for deploying serialized Python files."""
     pass
