@@ -231,10 +231,10 @@ class CartesiaTTS(Plugin):
             if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 if self._task:
                     self._task.cancel()
-                try:
-                    await self._task
-                except asyncio.CancelledError:
-                    pass
+                    try:
+                        await self._task
+                    except asyncio.CancelledError:
+                        pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
                 while not self.input_queue.empty():
