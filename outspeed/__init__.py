@@ -5,18 +5,6 @@ if sys.version_info[:2] < (3, 9):
 if sys.version_info[:2] >= (3, 13):
     raise RuntimeError("This version of Outspeed does not support Python 3.13+")
 
-import sentry_sdk
-
-sentry_sdk.init(
-    dsn="https://8842715aaa1b7fd845f8a55eea150394@o4506805333983232.ingest.us.sentry.io/4507603326795776",
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-)
 
 import coloredlogs
 import logging

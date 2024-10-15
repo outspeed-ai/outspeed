@@ -229,13 +229,13 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.6.1"
+version = "4.6.2.post1"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "anyio-4.6.1-py3-none-any.whl", hash = "sha256:0632863c9044798a494a05cab0b159dfad6a3f064094863a45878320eb4e8ed2"},
-    {file = "anyio-4.6.1.tar.gz", hash = "sha256:936e6613a08e8f71a300cfffca1c1c0806335607247696ac45f9b32c63bfb9aa"},
+    {file = "anyio-4.6.2.post1-py3-none-any.whl", hash = "sha256:6d170c36fba3bdd840c73d3868c1e777e33676a69c3a72cf0a0d5d6d8009b61d"},
+    {file = "anyio-4.6.2.post1.tar.gz", hash = "sha256:4c8bc31ccdb51c7f7bd251f51c609e038d63e34219b44aa86e47576389880b4c"},
 ]
 
 [package.dependencies]
@@ -3897,58 +3897,6 @@ doc = ["jupyterlite-pyodide-kernel", "jupyterlite-sphinx (>=0.12.0)", "jupytext"
 test = ["array-api-strict", "asv", "gmpy2", "hypothesis (>=6.30)", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
 
 [[package]]
-name = "sentry-sdk"
-version = "2.16.0"
-description = "Python client for Sentry (https://sentry.io)"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "sentry_sdk-2.16.0-py2.py3-none-any.whl", hash = "sha256:49139c31ebcd398f4f6396b18910610a0c1602f6e67083240c33019d1f6aa30c"},
-    {file = "sentry_sdk-2.16.0.tar.gz", hash = "sha256:90f733b32e15dfc1999e6b7aca67a38688a567329de4d6e184154a73f96c6892"},
-]
-
-[package.dependencies]
-certifi = "*"
-urllib3 = ">=1.26.11"
-
-[package.extras]
-aiohttp = ["aiohttp (>=3.5)"]
-anthropic = ["anthropic (>=0.16)"]
-arq = ["arq (>=0.23)"]
-asyncpg = ["asyncpg (>=0.23)"]
-beam = ["apache-beam (>=2.12)"]
-bottle = ["bottle (>=0.12.13)"]
-celery = ["celery (>=3)"]
-celery-redbeat = ["celery-redbeat (>=2)"]
-chalice = ["chalice (>=1.16.0)"]
-clickhouse-driver = ["clickhouse-driver (>=0.2.0)"]
-django = ["django (>=1.8)"]
-falcon = ["falcon (>=1.4)"]
-fastapi = ["fastapi (>=0.79.0)"]
-flask = ["blinker (>=1.1)", "flask (>=0.11)", "markupsafe"]
-grpcio = ["grpcio (>=1.21.1)", "protobuf (>=3.8.0)"]
-http2 = ["httpcore[http2] (==1.*)"]
-httpx = ["httpx (>=0.16.0)"]
-huey = ["huey (>=2)"]
-huggingface-hub = ["huggingface-hub (>=0.22)"]
-langchain = ["langchain (>=0.0.210)"]
-litestar = ["litestar (>=2.0.0)"]
-loguru = ["loguru (>=0.5)"]
-openai = ["openai (>=1.0.0)", "tiktoken (>=0.3.0)"]
-opentelemetry = ["opentelemetry-distro (>=0.35b0)"]
-opentelemetry-experimental = ["opentelemetry-distro"]
-pure-eval = ["asttokens", "executing", "pure-eval"]
-pymongo = ["pymongo (>=3.1)"]
-pyspark = ["pyspark (>=2.4.4)"]
-quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
-rq = ["rq (>=0.6)"]
-sanic = ["sanic (>=0.8)"]
-sqlalchemy = ["sqlalchemy (>=1.2)"]
-starlette = ["starlette (>=0.19.1)"]
-starlite = ["starlite (>=1.48)"]
-tornado = ["tornado (>=6)"]
-
-[[package]]
 name = "setuptools"
 version = "69.5.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -4781,4 +4729,4 @@ silero = ["silero-vad", "torch", "torchaudio", "torchvision"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <4.0"
-content-hash = "e7361a6a5a9790ad74958f669dccfc5d6f6c518cc24904dad15c8bbf247f2417"
+content-hash = "b52344fde79e30f8a7d7abdf055d9969410dfceaab04ccd6bc2fc19aec1ca9ab"
