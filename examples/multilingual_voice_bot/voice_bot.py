@@ -43,15 +43,15 @@ class VoiceBot:
         """
         # Initialize the AI services
         self.deepgram_node = sp.AzureTranscriber(sample_rate=8000, languages=["en-US", "hi-IN"])
-        self.llm_node = sp.GroqLLM(
-            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response.",
-            model="llama-3.1-70b-versatile",
+        self.llm_node = sp.OpenAILLM(
+            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response. Properly format your responses for python string.",
+            model="gpt-4o-mini",
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.ElevenLabsTTS(
             voice_id="1qZOLVpd1TVic43MSkFY",
             output_format="pcm_16000",
-            model="eleven_turbo_v2",
+            model="eleven_multilingual_v2",
         )
         self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
 
