@@ -7,9 +7,10 @@ import aiohttp
 
 from outspeed.data import AudioData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import AudioStream, TextStream
+from outspeed.streams import AudioStream, TextStream, VADStream
 from outspeed.utils import tracing
 from outspeed.data import SessionData
+from outspeed.utils.vad import VADState
 
 logger = logging.getLogger(__name__)
 
@@ -189,25 +190,35 @@ class ElevenLabsTTS(Plugin):
 
     async def _interrupt(self):
         """
-        Handle interruptions to the TTS process, e.g., when the user starts speaking.
+        Handle interruptions (e.g., when the user starts speaking).
+        Cancels ongoing TTS generation and clears the output queue.
         """
         while True:
-            user_speaking = await self.interrupt_queue.get()
-            if self._generating and user_speaking:
+            vad_state: VADState = await self.interrupt_queue.get()
+            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
                 if self._task:
                     self._task.cancel()
+                    try:
+                        await self._task
+                    except asyncio.CancelledError:
+                        pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
-                logger.info("Done cancelling TTS")
+                while not self.input_queue.empty():
+                    self.input_queue.get_nowait()
+                logging.info("Done cancelling TTS")
                 self._generating = False
                 self._task = asyncio.create_task(self.synthesize_speech())
 
-    async def set_interrupt(self, interrupt_queue: asyncio.Queue):
+    def set_interrupt_stream(self, interrupt_stream: VADStream):
         """
-        Set up the interrupt mechanism for the TTS process.
+        Set up the interrupt queue and start the interrupt handling task.
 
         Args:
-            interrupt_queue (asyncio.Queue): Queue for receiving interrupt signals.
+            interrupt_stream (VADStream): The stream for receiving interrupt signals.
         """
-        self.interrupt_queue = interrupt_queue
+        if isinstance(interrupt_stream, VADStream):
+            self.interrupt_queue = interrupt_stream
+        else:
+            raise ValueError("Interrupt stream must be a VADStream")
         self._interrupt_task = asyncio.create_task(self._interrupt())
