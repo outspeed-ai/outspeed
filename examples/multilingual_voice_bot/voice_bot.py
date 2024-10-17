@@ -48,8 +48,10 @@ class VoiceBot:
             model="llama-3.1-70b-versatile",
         )
         self.token_aggregator_node = sp.TokenAggregator()
-        self.tts_node = sp.CartesiaTTS(
-            voice_id="95856005-0332-41b0-935f-352e296aa0df",
+        self.tts_node = sp.ElevenLabsTTS(
+            voice_id="1qZOLVpd1TVic43MSkFY",
+            output_format="pcm_16000",
+            model="eleven_turbo_v2",
         )
         self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
 
