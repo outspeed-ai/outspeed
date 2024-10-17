@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outspeed"
-version = "0.1.153"
+version = "0.1.154"
 description = ""
 authors = ["Outspeed <contact@outspeed.ai>"]
 readme = "README.md"
