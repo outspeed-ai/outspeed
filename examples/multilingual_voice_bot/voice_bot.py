@@ -62,7 +62,7 @@ class VoiceBot:
 
         text_input_queue = sp.map(text_input_queue, lambda x: json.loads(x).get("content"))
 
-        llm_input_queue: sp.TextStream = sp.merge(
+        llm_input_queue = sp.merge(
             [deepgram_stream, text_input_queue],
         )
 
