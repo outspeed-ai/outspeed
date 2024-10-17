@@ -66,7 +66,7 @@ class DeepreelPlugin:
         Coroutine to establish a WebSocket connection.
         """
         ws = await websockets.connect(self.websocket_url)
-        await ws.send(json.dumps({"metadata": {"sent_frame_buffer": 5}}))
+        await ws.send(json.dumps({"metadata": {"sent_frame_buffer": 10}}))
         return ws
 
     def connect(self):
@@ -143,7 +143,7 @@ class DeepreelPlugin:
                 response_data: Dict[str, Any] = json.loads(msg)
                 images = response_data.get("image_data", [])
                 if images and not images[0]["silence_flag"]:
-                    print("received frames: ", [x["frame_idx"] for x in images], time.time())
+                    print("received frames: ", len(images), time.time())
                 for image in images:
                     # Decode the base64 string to bytes
                     if image["silence_flag"] and not silence_flag:
@@ -153,19 +153,6 @@ class DeepreelPlugin:
                         print("silence flag to false", time.time())
                         self._speaking = True
                         silence_flag = False
-                        temp_audio = []
-                        temp_video = []
-                        while self.audio_output_stream.qsize() > 0:
-                            temp_audio.append(self.audio_output_stream.get_nowait())
-                        while self.image_output_stream.qsize() > 0:
-                            temp_video.append(self.image_output_stream.get_nowait())
-                        for i, audio_data in enumerate(temp_audio):
-                            if i % 4 == 0:
-                                asyncio.run_coroutine_threadsafe(self.audio_output_stream.put(audio_data), self._loop)
-                        for i, image_data in enumerate(temp_video):
-                            if i % 4 == 0:
-                                asyncio.run_coroutine_threadsafe(self.image_output_stream.put(image_data), self._loop)
-
                     start_time = max(sp.Clock.get_playback_time(), start_time)
                     # print([image[x] for x in image if x != "image" and x != "audio"], time.time())
                     image_bytes = base64.b64decode(image["image"])
@@ -204,7 +191,10 @@ class DeepReelBot:
         """
         Set up the bot. Currently empty, but can be used for initialization if needed.
         """
-        self.deepreel_node = DeepreelPlugin(websocket_url="ws://13.89.58.206:8765/ws")
+
+        ### TODO: change to your websocket url
+        self.deepreel_node = DeepreelPlugin(websocket_url="")
+
         self.llm_node = sp.OpenAIRealtime(
             initiate_conversation_with_greeting="Hi. How are you?",
             voice_id="shimmer",
