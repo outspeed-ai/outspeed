@@ -164,19 +164,19 @@ class VADStream(Stream):
 
     def __init__(self) -> None:
         """
-        Initialize the AudioStream with a given sample rate.
+        Initialize the VADStream.
 
         Args:
             sample_rate (int, optional): The sample rate of the audio stream. Defaults to 8000.
         """
         super().__init__()
 
-    def clone(self) -> "AudioStream":
+    def clone(self) -> "VADStream":
         """
-        Create a copy of this AudioStream.
+        Create a copy of this VADStream.
 
         Returns:
-            AudioStream: A new AudioStream instance that is a clone of the current one.
+            VADStream: A new VADStream instance that is a clone of the current one.
         """
         clone = VADStream()
         self._clones.append(clone)
