@@ -215,7 +215,8 @@ class CartesiaTTS(Plugin):
     async def close(self):
         """Close the websocket connection and cancel the main task."""
         if self._ws:
-            await self._ws.close()
+            asyncio.create_task(self._ws.close())
+
         if self._task:
             self._task.cancel()
 
