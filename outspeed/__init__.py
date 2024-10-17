@@ -6,8 +6,9 @@ if sys.version_info[:2] >= (3, 13):
     raise RuntimeError("This version of Outspeed does not support Python 3.13+")
 
 
-import coloredlogs
 import logging
+
+import coloredlogs
 
 
 def configure_logging(level=logging.INFO):
@@ -34,31 +35,32 @@ configure_logging()
 
 try:
     from .app import App  # noqa: F401
-    from .data import AudioData, ImageData, TextData, SessionData  # noqa: F401
+    from .data import AudioData, ImageData, SessionData, TextData  # noqa: F401
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
+    from .plugins.azure_stt import AzureTranscriber  # noqa: F401
     from .plugins.azure_tts import AzureTTS  # noqa: F401
     from .plugins.cartesia_tts import CartesiaTTS  # noqa: F401
     from .plugins.deepgram_stt import DeepgramSTT  # noqa: F401
     from .plugins.eleven_labs_tts import ElevenLabsTTS  # noqa: F401
     from .plugins.fireworks_llm import FireworksLLM  # noqa: F401
+    from .plugins.gemini_vision import GeminiVision  # noqa: F401
     from .plugins.groq_llm import GroqLLM  # noqa: F401
+    from .plugins.key_frame_detector import KeyFrameDetector  # noqa: F401
+    from .plugins.openai_llm import OpenAILLM  # noqa: F401
+    from .plugins.openai_realtime.openai_realtime import OpenAIRealtime  # noqa: F401
+    from .plugins.openai_vision import OpenAIVision  # noqa: F401
+    from .plugins.silero_vad import SileroVAD  # noqa: F401
     from .plugins.token_aggregator import TokenAggregator  # noqa: F401
+    from .plugins.whisper_stt import WhisperSTT  # noqa: F401
+    from .server import RealtimeServer  # noqa: F401
     from .streaming_endpoint import streaming_endpoint  # noqa: F401
-    from .streams import AudioStream, TextStream, VideoStream, VADStream  # noqa: F401
+    from .streams import AudioStream, TextStream, VADStream, VideoStream  # noqa: F401
+    from .tool import Tool  # noqa: F401
+    from .utils.clock import Clock  # noqa: F401
+    from .utils.vad import VADState  # noqa: F401
     from .web_endpoint import web_endpoint  # noqa: F401
     from .websocket import websocket  # noqa: F401
-    from .utils.clock import Clock  # noqa: F401
-    from .plugins.silero_vad import SileroVAD  # noqa: F401
-    from .utils.vad import VADState  # noqa: F401
-    from .plugins.whisper_stt import WhisperSTT  # noqa: F401
-    from .plugins.openai_llm import OpenAILLM  # noqa: F401
-    from .plugins.key_frame_detector import KeyFrameDetector  # noqa: F401
-    from .plugins.gemini_vision import GeminiVision  # noqa: F401
-    from .plugins.openai_vision import OpenAIVision  # noqa: F401
-    from .plugins.openai_realtime.openai_realtime import OpenAIRealtime  # noqa: F401
-    from .tool import Tool  # noqa: F401
-    from .server import RealtimeServer  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -66,6 +68,11 @@ except Exception:
     print("#" * 50)
     print()
     raise
+
+import av
+
+av.logging.set_level(av.logging.PANIC)
+
 
 __all__ = [
     "configure_logging",
@@ -98,4 +105,5 @@ __all__ = [
     "OpenAIRealtime",
     "Tool",
     "RealtimeServer",
+    "AzureTranscriber",
 ]

@@ -25,17 +25,17 @@ class TokenAggregator(Plugin):
         super().__init__()
         self.output_queue: TextStream = TextStream()
         self.buffer: str = ""
-        self.input_queue: Optional[asyncio.Queue] = None
-        self.interrupt_queue: Optional[asyncio.Queue] = None
+        self.input_queue: TextStream = TextStream()
+        self.interrupt_queue: Optional[VADStream] = None
         self._task: Optional[asyncio.Task] = None
         self._interrupt_task: Optional[asyncio.Task] = None
 
-    def run(self, input_queue: asyncio.Queue) -> asyncio.Queue:
+    def run(self, input_queue: TextStream) -> TextStream:
         """
         Start the token aggregation process.
 
         Args:
-            input_queue (asyncio.Queue): The input queue to receive tokens from.
+            input_queue (TextStream): The input queue to receive tokens from.
 
         Returns:
             asyncio.Queue: The output queue where aggregated text will be sent.
@@ -92,10 +92,10 @@ class TokenAggregator(Plugin):
                 self.buffer = ""
                 if self._task:
                     self._task.cancel()
-                try:
-                    await self._task
-                except asyncio.CancelledError:
-                    pass
+                    try:
+                        await self._task
+                    except asyncio.CancelledError:
+                        pass
                 while not self.output_queue.empty():
                     self.output_queue.get_nowait()
                 while not self.input_queue.empty():
