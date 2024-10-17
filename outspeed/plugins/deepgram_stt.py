@@ -12,7 +12,7 @@ import aiohttp
 
 from outspeed.data import AudioData, SessionData
 from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import TextStream
+from outspeed.streams import AudioStream, TextStream
 from outspeed.utils import tracing
 
 # Constants for WebSocket messages
@@ -105,7 +105,7 @@ class DeepgramSTT(Plugin):
         if self._task:
             self._task.cancel()
 
-    def run(self, input_queue: asyncio.Queue) -> TextStream:
+    def run(self, input_queue: AudioStream) -> TextStream:
         """
         Start the Deepgram STT process.
 
