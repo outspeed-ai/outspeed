@@ -59,6 +59,7 @@ try:
     from .plugins.openai_realtime.openai_realtime import OpenAIRealtime  # noqa: F401
     from .tool import Tool  # noqa: F401
     from .server import RealtimeServer  # noqa: F401
+    from .plugins.azure_stt import AzureTranscriber  # noqa: F401
 except Exception:
     print()
     print("#" * 50)
@@ -98,4 +99,5 @@ __all__ = [
     "OpenAIRealtime",
     "Tool",
     "RealtimeServer",
+    "AzureTranscriber",
 ]
