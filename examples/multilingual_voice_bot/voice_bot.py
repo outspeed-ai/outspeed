@@ -40,7 +40,7 @@ class VoiceBot:
         services, load models, and perform any necessary initialization.
         """
         # Initialize the AI services
-        self.deepgram_node = sp.AzureTranscriber(sample_rate=8000, languages=["en-US", "hi-IN"])
+        self.transcriber_node = sp.AzureTranscriber(sample_rate=8000, languages=["en-US", "hi-IN"])
         self.llm_node = sp.OpenAILLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response. Properly format your responses for python string.",
             model="gpt-4o-mini",
@@ -69,14 +69,14 @@ class VoiceBot:
             sp.AudioStream: The output stream of generated audio responses.
         """
         # Set up the AI service pipeline
-        deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_queue)
+        transcriber_stream: sp.TextStream = self.transcriber_node.run(audio_input_queue)
 
         vad_stream: sp.VADStream = self.vad_node.run(audio_input_queue.clone())
 
         text_input_queue = sp.map(text_input_queue, lambda x: json.loads(x).get("content"))
 
         llm_input_queue = sp.merge(
-            [deepgram_stream, text_input_queue],
+            [transcriber_stream, text_input_queue],
         )
 
         llm_token_stream: sp.TextStream
@@ -99,7 +99,7 @@ class VoiceBot:
         This method is called when the app stops or is shut down unexpectedly.
         It should be used to release resources and perform any necessary cleanup.
         """
-        await self.deepgram_node.close()
+        await self.transcriber_node.close()
         await self.llm_node.close()
         await self.token_aggregator_node.close()
         await self.tts_node.close()
