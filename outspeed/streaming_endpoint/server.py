@@ -7,6 +7,7 @@ from typing import Dict
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from fastapi import HTTPException
+from aiortc.rtcrtpsender import RTCRtpSender
 
 from outspeed.server import RealtimeServer
 
@@ -15,6 +16,14 @@ ROOT = os.path.dirname(__file__)
 logger = logging.getLogger(__name__)
 
 pcs = set()
+
+
+def force_codec(pc, sender, forced_codec):
+    kind = forced_codec.split("/")[0]
+    codecs = RTCRtpSender.getCapabilities(kind).codecs
+    transceiver = next(t for t in pc.getTransceivers() if t.sender == sender)
+    print("codes", codecs)
+    transceiver.setCodecPreferences([codec for codec in codecs if codec.mimeType == forced_codec])
 
 
 def offer(audio_driver, video_driver, text_driver):
@@ -73,12 +82,15 @@ def offer(audio_driver, video_driver, text_driver):
             # handle offer
             await pc.setRemoteDescription(offer)
             if video_driver.video_output_q:
-                pc.addTrack(video_driver)
+                video_sender = pc.addTrack(video_driver)
             if audio_driver.audio_output_q:
-                pc.addTrack(audio_driver)
+                audio_sender = pc.addTrack(audio_driver)
+                force_codec(pc, audio_sender, "audio/opus")
 
             # send answer
             answer = await pc.createAnswer()
+            print(answer)
+            print(offer)
             await pc.setLocalDescription(answer)
         except Exception as e:
             logger.error(
