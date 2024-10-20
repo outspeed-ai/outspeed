@@ -7,6 +7,7 @@ if sys.version_info[:2] >= (3, 13):
 
 
 import logging
+import platform
 import os
 
 import certifi
@@ -15,7 +16,23 @@ import coloredlogs
 # Fix for "certificate verify failed" error in Python
 # Sets SSL cert file to certifi's trusted certificate bundle
 # ref: https://stackoverflow.com/a/42334357
-os.environ['SSL_CERT_FILE'] = certifi.where()
+def cross_platform_where():
+    if platform.system() == 'Darwin':  # macOS
+        if os.path.exists('/etc/ssl/cert.pem'):
+            return '/etc/ssl/cert.pem'
+        else:
+            return certifi.where()
+    elif os.name == 'posix':  # Linux and other POSIX systems
+        if os.path.exists('/etc/ssl/certs/ca-certificates.crt'):
+            return '/etc/ssl/certs/ca-certificates.crt'
+        elif os.path.exists('/etc/ssl/cert.pem'):
+            return '/etc/ssl/cert.pem'
+        else:
+            return certifi.where()
+    else:  # Windows and others
+        return certifi.where()
+
+os.environ['SSL_CERT_FILE'] = cross_platform_where()
 
 def configure_logging(level=logging.INFO):
     """
