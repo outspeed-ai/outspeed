@@ -15,7 +15,8 @@ import coloredlogs
 
 # Fix for "certificate verify failed" error in Python
 # Sets SSL cert file to certifi's trusted certificate bundle
-# ref: https://stackoverflow.com/a/42334357
+# ref: https://stackoverflow.com/a/42334357,
+# ref: https://www.happyassassin.net/posts/2015/01/12/a-note-about-ssltls-trusted-certificate-stores-and-platforms/
 def cross_platform_where():
     if platform.system() == 'Darwin':  # macOS
         if os.path.exists('/etc/ssl/cert.pem'):
