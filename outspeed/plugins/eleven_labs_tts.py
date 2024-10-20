@@ -5,11 +5,10 @@ from typing import Optional
 
 import aiohttp
 
-from outspeed.data import AudioData
+from outspeed.data import AudioData, SessionData
 from outspeed.plugins.base_plugin import Plugin
 from outspeed.streams import AudioStream, TextStream, VADStream
 from outspeed.utils import tracing
-from outspeed.data import SessionData
 from outspeed.utils.vad import VADState
 
 logger = logging.getLogger(__name__)
@@ -32,6 +31,9 @@ class ElevenLabsTTS(Plugin):
         output_format: str = "pcm_16000",
         optimize_streaming_latency: int = 4,
         stream: bool = True,
+        stability: float = 0.5,
+        similarity_boost: float = 0.8,
+        volume: float = 1.0,
     ):
         """
         Initialize the ElevenLabsTTS plugin.
@@ -66,6 +68,8 @@ class ElevenLabsTTS(Plugin):
             self.sample_rate = 16000
         elif self._output_format == "pcm_24000":
             self.sample_rate = 24000
+        elif self._output_format == "pcm_44100":
+            self.sample_rate = 44100
         elif self._output_format == "mp3_22050_32":
             self.sample_rate = 22050
         elif self._output_format == "mp3_44100_128":
@@ -80,6 +84,10 @@ class ElevenLabsTTS(Plugin):
         self._task: Optional[asyncio.Task] = None
         self.interrupt_queue: Optional[asyncio.Queue] = None
         self._interrupt_task: Optional[asyncio.Task] = None
+
+        self.stability = stability
+        self.similarity_boost = similarity_boost
+        self.volume = volume
 
     def run(self, input_queue: TextStream) -> AudioStream:
         """
@@ -118,7 +126,11 @@ class ElevenLabsTTS(Plugin):
                     # Prepare API request
                     url = f"https://api.elevenlabs.io/v1/text-to-speech/{self._voice_id}"
                     url += "/stream" if self._stream else ""
-                    payload = {"text": text_chunk, "model_id": self._model}
+                    payload = {
+                        "text": text_chunk,
+                        "model_id": self._model,
+                        "voice_settings": {"stability": self.stability, "similarity_boost": self.similarity_boost},
+                    }
                     querystring = {
                         "output_format": self._output_format,
                         # "optimize_streaming_latency": self._optimize_streaming_latency,
