@@ -7,9 +7,15 @@ if sys.version_info[:2] >= (3, 13):
 
 
 import logging
+import os
 
+import certifi
 import coloredlogs
 
+# Fix for "certificate verify failed" error in Python
+# Sets SSL cert file to certifi's trusted certificate bundle
+# ref: https://stackoverflow.com/a/42334357
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 def configure_logging(level=logging.INFO):
     """
