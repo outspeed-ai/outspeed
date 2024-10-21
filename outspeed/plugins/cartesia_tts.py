@@ -35,6 +35,7 @@ class CartesiaTTS(Plugin):
         stream: bool = True,
         base_url: str = "wss://api.cartesia.ai/tts/websocket",
         cartesia_version: str = "2024-06-10",
+        volume: float = 1.0,
     ):
         """
         Initialize the CartesiaTTS plugin.
@@ -73,7 +74,7 @@ class CartesiaTTS(Plugin):
         self._text_context_id: Optional[str] = None
         self._audio_context_id: Optional[str] = None
         self._ws = None
-
+        self.volume: float = volume
         # Initialize queues
         self.input_queue: Optional[TextStream] = None
         self.interrupt_queue: Optional[asyncio.Queue] = None
@@ -185,7 +186,9 @@ class CartesiaTTS(Plugin):
                             tracing.register_event(tracing.Event.TTS_TTFB)
                             logging.info(f"Got TTS first chunk {time.time()}")
                             is_first_chunk = False
-                        await self.output_queue.put(AudioData(audio_bytes, sample_rate=self.output_sample_rate))
+                        await self.output_queue.put(
+                            AudioData(audio_bytes, sample_rate=self.output_sample_rate).change_volume(self.volume)
+                        )
                     elif response["type"] == "done":
                         tracing.register_event(tracing.Event.TTS_END)
                         tracing.register_metric(tracing.Metric.TTS_TOTAL_BYTES, total_audio_bytes)

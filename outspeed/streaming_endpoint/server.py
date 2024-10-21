@@ -7,8 +7,11 @@ from typing import Dict
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from fastapi import HTTPException
+from aiortc.rtcrtpsender import RTCRtpSender
 
 from outspeed.server import RealtimeServer
+from outspeed.utils.audio import AudioCodec
+from outspeed.utils.images import VideoCodec
 
 ROOT = os.path.dirname(__file__)
 
@@ -17,7 +20,14 @@ logger = logging.getLogger(__name__)
 pcs = set()
 
 
-def offer(audio_driver, video_driver, text_driver):
+def force_codec(pc, sender, forced_codec: str):
+    kind = forced_codec.split("/")[0]
+    codecs = RTCRtpSender.getCapabilities(kind).codecs
+    transceiver = next(t for t in pc.getTransceivers() if t.sender == sender)
+    transceiver.setCodecPreferences([codec for codec in codecs if codec.mimeType.lower() == forced_codec.lower()])
+
+
+def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec: str):
     async def handshake(params: Dict[str, str]):
         offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
@@ -73,9 +83,11 @@ def offer(audio_driver, video_driver, text_driver):
             # handle offer
             await pc.setRemoteDescription(offer)
             if video_driver.video_output_q:
-                pc.addTrack(video_driver)
+                video_sender = pc.addTrack(video_driver)
+                force_codec(pc, video_sender, video_codec)
             if audio_driver.audio_output_q:
-                pc.addTrack(audio_driver)
+                audio_sender = pc.addTrack(audio_driver)
+                force_codec(pc, audio_sender, audio_codec)
 
             # send answer
             answer = await pc.createAnswer()
@@ -109,7 +121,15 @@ async def on_shutdown():
     pcs.clear()
 
 
-def create_and_run_server(audio_driver, video_driver, text_driver):
+def create_and_run_server(
+    audio_driver,
+    video_driver,
+    text_driver,
+    audio_codec: str,
+    video_codec: str,
+):
     fastapi_app = RealtimeServer().get_app()
-    fastapi_app.add_api_route("/offer", offer(audio_driver, video_driver, text_driver), methods=["POST"])
+    fastapi_app.add_api_route(
+        "/offer", offer(audio_driver, video_driver, text_driver, audio_codec, video_codec), methods=["POST"]
+    )
     fastapi_app.add_event_handler("shutdown", on_shutdown)

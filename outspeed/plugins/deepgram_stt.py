@@ -41,9 +41,6 @@ class DeepgramSTT(Plugin):
         smart_format: bool = True,
         model: str = "nova-2",
         api_key: Optional[str] = None,
-        sample_rate: int = 16000,
-        num_channels: int = 1,
-        sample_width: int = 2,
         min_silence_duration: int = 100,
         confidence_threshold: float = 0.8,
         max_silence_duration: int = 2,
@@ -78,9 +75,9 @@ class DeepgramSTT(Plugin):
         self.min_silence_duration: int = min_silence_duration
         self.endpointing: int = min_silence_duration
 
-        self._sample_rate: int = sample_rate
-        self._num_channels: int = num_channels
-        self._sample_width: int = sample_width
+        self._sample_rate: Optional[int] = None
+        self._num_channels: Optional[int] = None
+        self._sample_width: Optional[int] = None
         self._speaking: bool = False
         self.confidence_threshold: float = confidence_threshold
 
@@ -128,6 +125,7 @@ class DeepgramSTT(Plugin):
             "endpointing": self.endpointing,
             "language": self.language,
         }
+        print(f"live_config: {live_config}")
 
         headers = {"Authorization": f"Token {self._api_key}"}
 
@@ -169,8 +167,6 @@ class DeepgramSTT(Plugin):
         try:
             while True:
                 data: Union[AudioData, SessionData] = await self.input_queue.get()
-                if not self._ws:
-                    await self._connect_ws()
 
                 if data == _CLOSE_MSG:
                     self._closed = True
@@ -180,6 +176,15 @@ class DeepgramSTT(Plugin):
                 if isinstance(data, SessionData):
                     await self.output_queue.put(data)
                     continue
+
+                if not data:
+                    continue
+
+                if not self._ws:
+                    self._sample_rate = data.sample_rate
+                    self._num_channels = data.channels
+                    self._sample_width = data.sample_width
+                    await self._connect_ws()
 
                 bytes_data = data.get_bytes()
                 self._audio_duration_received += len(bytes_data) / (

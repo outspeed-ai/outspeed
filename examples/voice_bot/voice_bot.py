@@ -2,6 +2,26 @@ import json
 
 import outspeed as sp
 
+
+def check_outspeed_version():
+    import importlib.metadata
+
+    from packaging import version
+
+    required_version = "0.2.0"
+
+    try:
+        current_version = importlib.metadata.version("outspeed")
+        if version.parse(current_version) < version.parse(required_version):
+            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
+        else:
+            print(f"Outspeed version {current_version} meets the requirement.")
+    except importlib.metadata.PackageNotFoundError:
+        raise ValueError("Outspeed package is not installed.")
+
+
+check_outspeed_version()
+
 """
 The @outspeed.App() decorator is used to wrap the VoiceBot class.
 This tells the outspeed server which functions to run.
@@ -42,13 +62,14 @@ class VoiceBot:
             sp.AudioStream: The output stream of generated audio responses.
         """
         # Initialize the AI services
-        self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
+        self.deepgram_node = sp.DeepgramSTT()
         self.llm_node = sp.GroqLLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(
             voice_id="95856005-0332-41b0-935f-352e296aa0df",
+            volume=0.7,
         )
 
         # Set up the AI service pipeline

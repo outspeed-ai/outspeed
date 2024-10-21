@@ -8,7 +8,7 @@ def check_outspeed_version():
 
     from packaging import version
 
-    required_version = "0.1.154"
+    required_version = "0.2.0"
 
     try:
         current_version = importlib.metadata.version("outspeed")
@@ -40,18 +40,18 @@ class VoiceBot:
         services, load models, and perform any necessary initialization.
         """
         # Initialize the AI services
-        self.transcriber_node = sp.AzureTranscriber(sample_rate=8000, languages=["en-US", "hi-IN"])
+        self.transcriber_node = sp.AzureTranscriber(languages=["en-US", "fr-FR"])
         self.llm_node = sp.OpenAILLM(
-            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response. Properly format your responses for python string.",
+            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. You can speak English and French. Reply in the same language as the user's response.",
             model="gpt-4o-mini",
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.ElevenLabsTTS(
-            voice_id="1qZOLVpd1TVic43MSkFY",
-            output_format="pcm_16000",
-            model="eleven_multilingual_v2",
+            voice_id="4DHVFVPkvJPP4FNkikun",
+            model="eleven_turbo_v2_5",
+            volume=0.7,
         )
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(min_volume=0)
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
