@@ -13,11 +13,13 @@ from outspeed.streaming_endpoint.TextRTCDriver import TextRTCDriver
 from outspeed.streaming_endpoint.VideoRTCDriver import VideoRTCDriver
 from outspeed.streams import AudioStream, TextStream, VideoStream
 from outspeed.utils import tracing
+from outspeed.utils.audio import AudioCodec
+from outspeed.utils.images import VideoCodec
 
 logger = logging.getLogger(__name__)
 
 
-def streaming_endpoint() -> Callable:
+def streaming_endpoint(audio_codec: str = AudioCodec.OPUS, video_codec: str = VideoCodec.H264) -> Callable:
     """
     Decorator for creating a streaming endpoint.
 
@@ -75,7 +77,13 @@ def streaming_endpoint() -> Callable:
                 text_output_processor = TextRTCDriver(text_input_q, tq)
 
                 # Create and run the server
-                create_and_run_server(audio_output_frame_processor, video_output_frame_processor, text_output_processor)
+                create_and_run_server(
+                    audio_output_frame_processor,
+                    video_output_frame_processor,
+                    text_output_processor,
+                    audio_codec,
+                    video_codec,
+                )
 
                 # Create and run tasks for each processor
                 tasks = [

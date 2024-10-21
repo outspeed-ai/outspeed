@@ -1,5 +1,13 @@
+from enum import Enum
+
 import numpy as np
 import pyloudnorm as pyln
+
+
+class AudioCodec(str, Enum):
+    OPUS = "audio/opus"
+    PCMU = "audio/PCMU"
+    PCMA = "audio/PCMA"
 
 
 def normalize_value(value, min_value, max_value):
