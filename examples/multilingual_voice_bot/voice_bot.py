@@ -8,7 +8,7 @@ def check_outspeed_version():
 
     from packaging import version
 
-    required_version = "0.1.154"
+    required_version = "0.2.0"
 
     try:
         current_version = importlib.metadata.version("outspeed")
@@ -51,7 +51,7 @@ class VoiceBot:
             output_format="pcm_16000",
             model="eleven_multilingual_v2",
         )
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(min_volume=0)
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:

@@ -1,10 +1,30 @@
 import outspeed as sp
 
 
+def check_outspeed_version():
+    import importlib.metadata
+
+    from packaging import version
+
+    required_version = "0.2.0"
+
+    try:
+        current_version = importlib.metadata.version("outspeed")
+        if version.parse(current_version) < version.parse(required_version):
+            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
+        else:
+            print(f"Outspeed version {current_version} meets the requirement.")
+    except importlib.metadata.PackageNotFoundError:
+        raise ValueError("Outspeed package is not installed.")
+
+
+check_outspeed_version()
+
+
 @sp.App()
 class CookingAssistant:
     async def setup(self):
-        self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
+        self.deepgram_node = sp.DeepgramSTT()
         self.keyframe_node = sp.KeyFrameDetector(key_frame_threshold=0.8, key_frame_max_time=20)
         self.llm_node = sp.GeminiVision(
             system_prompt="You are a chef. Your job is to provide feedback and guide the user on how to cook a dish. First tell them the recipe and then guide them on how to cook it. Take into account previous responses for a smooth flow. Do not repeat yourself. Keep the output within 15 words.",
@@ -15,7 +35,7 @@ class CookingAssistant:
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(voice_id="5619d38c-cf51-4d8e-9575-48f61a280413")
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(min_volume=0)
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_stream: sp.AudioStream, video_input_stream: sp.VideoStream):
