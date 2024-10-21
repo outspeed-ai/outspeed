@@ -40,7 +40,7 @@ class VoiceBot:
         services, load models, and perform any necessary initialization.
         """
         # Initialize the AI services
-        self.transcriber_node = sp.AzureTranscriber(sample_rate=8000, languages=["en-US", "hi-IN"])
+        self.transcriber_node = sp.AzureTranscriber(languages=["en-US", "hi-IN"])
         self.llm_node = sp.OpenAILLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response. Properly format your responses for python string.",
             model="gpt-4o-mini",
