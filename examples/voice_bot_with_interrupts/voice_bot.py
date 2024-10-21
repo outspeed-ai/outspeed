@@ -42,7 +42,7 @@ class VoiceBot:
             sp.AudioStream: The output stream of generated audio responses.
         """
         # Initialize the AI services
-        self.deepgram_node = sp.DeepgramSTT(sample_rate=8000)
+        self.deepgram_node = sp.DeepgramSTT()
         self.llm_node = sp.GroqLLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
         )
@@ -50,7 +50,7 @@ class VoiceBot:
         self.tts_node = sp.CartesiaTTS(
             voice_id="95856005-0332-41b0-935f-352e296aa0df",
         )
-        self.vad_node = sp.SileroVAD(sample_rate=8000, min_volume=0)
+        self.vad_node = sp.SileroVAD(min_volume=0)
 
         # Set up the AI service pipeline
         deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_queue)
