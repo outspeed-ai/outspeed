@@ -235,7 +235,10 @@ class AudioData:
         Raises:
             ValueError: If the percentage is not between 0 and 100.
         """
-        if not 0 < percentage <= 1.0:
+        if percentage == 1:
+            return self
+
+        if not 0 < percentage < 1:
             raise ValueError("Percentage must be between 0 and 100")
 
         # Create an AudioSegment from the current audio data
