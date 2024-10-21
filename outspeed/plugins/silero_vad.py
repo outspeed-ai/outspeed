@@ -14,16 +14,13 @@ from outspeed.utils.vad import VADState
 class SileroVAD(Plugin):
     def __init__(
         self,
-        sample_rate: int = 8000,
         min_speech_duration_seconds: float = 0.2,
         min_silence_duration_seconds: float = 0.25,
         activation_threshold: float = 0.5,
         min_volume: float = 0.6,
-        num_channels: int = 1,
     ):
-        self.model = SileroVADModel(sample_rate=sample_rate, num_channels=num_channels)
+        self.model = SileroVADModel(sample_rate=8000, num_channels=1)
 
-        self._sample_rate = sample_rate
         self._activation_threshold = activation_threshold
 
         self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
@@ -31,7 +28,8 @@ class SileroVAD(Plugin):
         self.user_speaking = False
 
         self._vad_buffer = b""
-        self._num_channels = num_channels
+        self._num_channels = 1
+        self._sample_rate = 8000
 
         # Volume exponential smoothing
         self._smoothing_factor = 0.2
@@ -47,10 +45,6 @@ class SileroVAD(Plugin):
         self._silence_duration_seconds = 0
         self._vad_state = VADState.QUIET
         self._prev_vad_state = VADState.QUIET
-
-        logging.info(
-            f"Initialized SileroVAD with sample rate: {sample_rate}, activation threshold: {activation_threshold}, min volume: {min_volume}"
-        )
 
     def run(self, input_queue: AudioStream) -> VADStream:
         self.input_queue = input_queue
@@ -71,7 +65,7 @@ class SileroVAD(Plugin):
                 audio_data: AudioData = future.result()
                 if audio_data is None or not isinstance(audio_data, AudioData):
                     continue
-                buffer = audio_data.get_bytes()
+                buffer = audio_data.resample(self._sample_rate, self._num_channels).get_bytes()
                 self._vad_buffer += buffer
 
                 if len(self._vad_buffer) < self._silero_chunk_bytes:
