@@ -49,7 +49,7 @@ class VoiceBot:
         self.tts_node = sp.ElevenLabsTTS(
             voice_id="1qZOLVpd1TVic43MSkFY",
             output_format="pcm_16000",
-            model="eleven_multilingual_v2",
+            model="eleven_turbo_v2_5",
         )
         self.vad_node = sp.SileroVAD(min_volume=0)
 
