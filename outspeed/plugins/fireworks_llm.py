@@ -2,12 +2,13 @@ import asyncio
 import json
 import logging
 import os
-from typing import Tuple
+from typing import List, Tuple
 
 from openai import AsyncOpenAI
 
 from outspeed.plugins.base_plugin import Plugin
 from outspeed.streams import TextStream, VADStream
+from outspeed.tool import Tool
 from outspeed.utils import tracing
 
 from outspeed.utils.vad import VADState
@@ -24,12 +25,19 @@ class FireworksLLM(Plugin):
         stream: bool = True,
         temperature: float = 1.0,
         response_format: dict = None,
+        tools: List[Tool] = None,
     ):
         super().__init__()
         self._model: str = model
         api_key = api_key or os.getenv("FIREWORKS_API_KEY")
         if not api_key:
             raise ValueError("Fireworks API key is required")
+
+        if tools and model not in [
+            "accounts/fireworks/models/firefunction-v2",
+            "accounts/fireworks/models/firefunction-v1",
+        ]:
+            raise ValueError("Tools are only supported for firefunction-v2 and firefunction-v1")
         self._api_key = api_key
         self._client = AsyncOpenAI(api_key=api_key, base_url="https://api.fireworks.ai/inference/v1")
         self._history = []
