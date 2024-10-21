@@ -63,7 +63,7 @@ class CookingAssistant:
 
     async def teardown(self):
         await self.deepgram_node.close()
-        await self.openai_node.close()
+        await self.llm_node.close()
         await self.token_aggregator_node.close()
         await self.tts_node.close()
 
