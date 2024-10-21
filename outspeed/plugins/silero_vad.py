@@ -50,7 +50,7 @@ class SileroVAD(Plugin):
         self.input_queue = input_queue
         self._vad_thread = threading.Thread(target=self.execute_vad, daemon=True)
         self._vad_thread.start()
-        logging.info("Starting SileroVAD execution")
+        logging.debug("Starting SileroVAD execution")
         return self.output_queue
 
     def _get_smoothed_volume(self, audio: bytes) -> float:
@@ -99,7 +99,7 @@ class SileroVAD(Plugin):
                         self._vad_state = VADState.SPEAKING
                         self._speech_duration_seconds = 0
                         self._silence_duration_seconds = 0
-                        logging.info("Speech detected, transitioning to SPEAKING state")
+                        logging.debug("Speech detected, transitioning to SPEAKING state")
 
                     elif (
                         self._vad_state == VADState.STOPPING
@@ -108,10 +108,10 @@ class SileroVAD(Plugin):
                         self._vad_state = VADState.QUIET
                         self._silence_duration_seconds = 0
                         self._speech_duration_seconds = 0
-                        logging.info("Silence detected, transitioning to QUIET state")
+                        logging.debug("Silence detected, transitioning to QUIET state")
 
                     if self._vad_state != self._prev_vad_state:
-                        logging.info(f"VAD state: {self._vad_state}")
+                        logging.debug(f"VAD state: {self._vad_state}")
                         self._prev_vad_state = self._vad_state
                         asyncio.run_coroutine_threadsafe(self.output_queue.put(self._vad_state), self._loop)
         except Exception as e:
