@@ -163,16 +163,22 @@ class ElevenLabsTTS(Plugin):
                                     if len(audio_buffer) >= 4000:
                                         if len(audio_buffer) % 2 != 0:
                                             self.output_queue.put_nowait(
-                                                AudioData(audio_buffer[:-1], sample_rate=self.sample_rate)
+                                                AudioData(
+                                                    audio_buffer[:-1], sample_rate=self.sample_rate
+                                                ).change_volume(self.volume)
                                             )
                                             audio_buffer = audio_buffer[-1:]
                                         else:
                                             self.output_queue.put_nowait(
-                                                AudioData(audio_buffer, sample_rate=self.sample_rate)
+                                                AudioData(audio_buffer, sample_rate=self.sample_rate).change_volume(
+                                                    self.volume
+                                                )
                                             )
                                             audio_buffer = b""
                             if len(audio_buffer) > 0:
-                                self.output_queue.put_nowait(AudioData(audio_buffer, sample_rate=self.sample_rate))
+                                self.output_queue.put_nowait(
+                                    AudioData(audio_buffer, sample_rate=self.sample_rate).change_volume(self.volume)
+                                )
                                 audio_buffer = b""
                         else:
                             # Non-streaming mode: process entire response at once
