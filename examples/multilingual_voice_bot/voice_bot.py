@@ -42,7 +42,7 @@ class VoiceBot:
         # Initialize the AI services
         self.transcriber_node = sp.AzureTranscriber(languages=["en-US", "hi-IN"])
         self.llm_node = sp.OpenAILLM(
-            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. Reply in the same language as the user's response. Properly format your responses for python string.",
+            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. You can speak Hindi and English. Reply in the same language as the user's response.",
             model="gpt-4o-mini",
         )
         self.token_aggregator_node = sp.TokenAggregator()
