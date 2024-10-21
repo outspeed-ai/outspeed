@@ -189,7 +189,7 @@ class AudioData:
         else:
             raise ValueError("AudioData data must be bytes or av.AudioFrame")
 
-    def resample(self, sample_rate: int) -> "AudioData":
+    def resample(self, sample_rate: int, channels: int = 1) -> "AudioData":
         """
         Resample the audio data to a new sample rate.
 
@@ -199,7 +199,7 @@ class AudioData:
         Returns:
             AudioData: The resampled audio data.
         """
-        if self.sample_rate == sample_rate:
+        if self.sample_rate == sample_rate and self.channels == channels:
             return self
 
         audio_segment = AudioSegment(
@@ -212,11 +212,14 @@ class AudioData:
         # Resample the audio to 16000 Hz
         resampled_audio = audio_segment.set_frame_rate(sample_rate)
 
+        # Change the number of channels
+        resampled_audio = resampled_audio.set_channels(channels)
+
         # Convert the resampled audio back to bytes
         data = resampled_audio.raw_data
 
         return AudioData(
-            data, sample_rate, self.channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
+            data, sample_rate, channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
         )
 
 
