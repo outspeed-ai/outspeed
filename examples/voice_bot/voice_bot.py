@@ -69,6 +69,7 @@ class VoiceBot:
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(
             voice_id="95856005-0332-41b0-935f-352e296aa0df",
+            volume=0.7,
         )
 
         # Set up the AI service pipeline

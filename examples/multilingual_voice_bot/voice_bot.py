@@ -48,7 +48,6 @@ class VoiceBot:
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.ElevenLabsTTS(
             voice_id="1qZOLVpd1TVic43MSkFY",
-            output_format="pcm_16000",
             model="eleven_turbo_v2_5",
             volume=0.7,
         )
