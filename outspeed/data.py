@@ -222,6 +222,41 @@ class AudioData:
             data, sample_rate, channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
         )
 
+    def change_volume(self, percentage: float) -> "AudioData":
+        """
+        Change the volume to a percentage of the original volume.
+
+        Args:
+            percentage (float): The desired volume as a percentage (e.g., 50 for 50%).
+
+        Returns:
+            AudioData: A new instance with the adjusted volume.
+
+        Raises:
+            ValueError: If the percentage is not between 0 and 100.
+        """
+        if not 0 < percentage <= 1.0:
+            raise ValueError("Percentage must be between 0 and 100")
+
+        # Create an AudioSegment from the current audio data
+        audio_segment = AudioSegment(
+            data=self.get_bytes(), sample_width=self.sample_width, frame_rate=self.sample_rate, channels=self.channels
+        )
+
+        # Calculate gain in dB
+        change_db = 20 * np.log10(percentage)
+        adjusted_audio = audio_segment.apply_gain(change_db)
+
+        return AudioData(
+            data=adjusted_audio.raw_data,
+            sample_rate=self.sample_rate,
+            channels=self.channels,
+            sample_width=self.sample_width,
+            format=self.format,
+            relative_start_time=self.relative_start_time,
+            extra_tags=self.extra_tags,
+        )
+
 
 class ImageData:
     """
