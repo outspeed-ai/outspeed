@@ -50,6 +50,7 @@ class VoiceBot:
             voice_id="1qZOLVpd1TVic43MSkFY",
             output_format="pcm_16000",
             model="eleven_turbo_v2_5",
+            volume=0.7,
         )
         self.vad_node = sp.SileroVAD(min_volume=0)
 
