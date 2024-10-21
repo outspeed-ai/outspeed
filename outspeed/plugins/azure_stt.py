@@ -53,7 +53,8 @@ class AzureTranscriber(Plugin):
 
     def recognized_sentence_final(self, evt):
         logging.info(f"Azure STT: {evt.result.text}")
-        self.output_queue.put_nowait(evt.result.text)
+        if evt.result.text:
+            self.output_queue.put_nowait(evt.result.text)
 
     def recognized_sentence_stream(self, evt):
         logging.debug(f"Azure Intermediate STT: {evt.result.text}")
