@@ -24,7 +24,6 @@ def force_codec(pc, sender, forced_codec: str):
     kind = forced_codec.split("/")[0]
     codecs = RTCRtpSender.getCapabilities(kind).codecs
     transceiver = next(t for t in pc.getTransceivers() if t.sender == sender)
-    print("codes", codecs)
     transceiver.setCodecPreferences([codec for codec in codecs if codec.mimeType.lower() == forced_codec.lower()])
 
 
