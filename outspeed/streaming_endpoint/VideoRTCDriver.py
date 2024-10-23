@@ -18,6 +18,8 @@ class VideoRTCDriver(MediaStreamTrack):
         self._start = None
 
     async def recv(self):
+        if not self.video_output_q:
+            return None
         video_data = await self.video_output_q.get()
         if video_data is None or not isinstance(video_data, ImageData):
             return None
