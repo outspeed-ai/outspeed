@@ -84,7 +84,6 @@ class VoiceBot:
             tools=[
                 SearchTool(),
             ],
-            model="llama-3.2-90b-vision-preview",
         )
         self.token_aggregator_node = sp.TokenAggregator()
         self.tts_node = sp.CartesiaTTS(
