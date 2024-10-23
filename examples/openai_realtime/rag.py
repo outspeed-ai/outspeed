@@ -18,7 +18,7 @@ def check_outspeed_version():
 
     from packaging import version
 
-    required_version = "0.1.151"
+    required_version = "0.2.1"
 
     try:
         current_version = importlib.metadata.version("outspeed")
@@ -37,27 +37,29 @@ class Query(BaseModel):
     query_for_neural_search: str
 
 
-class SearchResult(BaseModel):
+class RAGResult(BaseModel):
     result: str
 
 
-class SearchTool(sp.Tool):
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        parameters_type: type[Query],
-        response_type: type[SearchResult],
-        query_engine,
-    ):
-        super().__init__(name, description, parameters_type, response_type)
-        self.query_engine = query_engine
+class RAGTool(sp.Tool):
+    name = "rag"
+    description = "Search the knowledge base for information"
+    parameters_type = Query
+    response_type = RAGResult
 
-    async def run(self, query: Query) -> SearchResult:
+    def __init__(self):
+        super().__init__()
+        documents = SimpleDirectoryReader(f"{PARENT_DIR}/data/").load_data()
+        node_parser = SimpleNodeParser.from_defaults(chunk_size=512)
+        nodes = node_parser.get_nodes_from_documents(documents=documents)
+        vector_index = VectorStoreIndex(nodes)
+        self.query_engine = vector_index.as_query_engine(similarity_top_k=2)
+
+    async def run(self, query: Query) -> RAGResult:
         logging.info(f"Searching for: {query.query_for_neural_search}")
         response = self.query_engine.query(query.query_for_neural_search)
         logging.info(f"RAG Response: {response}")
-        return SearchResult(result=str(response))
+        return RAGResult(result=str(response))
 
 
 @sp.App()
@@ -72,13 +74,7 @@ class VoiceBot:
         # Initialize the AI services
         self.llm_node = sp.OpenAIRealtime(
             tools=[
-                SearchTool(
-                    name="search",
-                    description="Search the web for information",
-                    parameters_type=Query,
-                    response_type=SearchResult,
-                    query_engine=self.query_engine,
-                )
+                RAGTool(),
             ]
         )
 
