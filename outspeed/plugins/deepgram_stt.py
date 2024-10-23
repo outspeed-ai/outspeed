@@ -125,7 +125,6 @@ class DeepgramSTT(Plugin):
             "endpointing": self.endpointing,
             "language": self.language,
         }
-        print(f"live_config: {live_config}")
 
         headers = {"Authorization": f"Token {self._api_key}"}
 
