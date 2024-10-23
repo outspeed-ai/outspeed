@@ -15,7 +15,7 @@ class FireworksLLM(OpenAILLM):
         stream: bool = True,
         temperature: float = 1.0,
         response_format: Dict[str, Any] = {"type": "text"},
-        tools: Optional[list[Tool]] = None,
+        tools: list[Tool] = [],
         tool_choice: Literal["auto", "none", "required"] = "auto",
     ):
         api_key = api_key or os.getenv("FIREWORKS_API_KEY")
