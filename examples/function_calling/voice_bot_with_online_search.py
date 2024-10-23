@@ -79,7 +79,7 @@ class VoiceBot:
     async def setup(self) -> None:
         # Initialize the AI services
         self.deepgram_node = sp.DeepgramSTT()
-        self.llm_node = sp.GroqLLM(
+        self.llm_node = sp.OpenAILLM(
             tool_choice="required",
             tools=[
                 SearchTool(),
