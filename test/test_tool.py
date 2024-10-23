@@ -55,6 +55,11 @@ class Query(BaseModel):
 
 
 class MockTool(Tool):
+    name = "query_tool"
+    description = "Converts Query to OpenAI tool JSON and vice versa"
+    parameters_type = Query
+    response_type = Query
+
     async def run(self, input_parameters: BaseModel):
         # Mock implementation for testing
         return input_parameters
@@ -84,12 +89,7 @@ def sample_query():
 @pytest.mark.asyncio
 async def test_query_to_openai_tool_json_and_back(sample_query):
     # Initialize the mock tool with Query as parameters_type and Query as response_type
-    tool = MockTool(
-        name="query_tool",
-        description="Converts Query to OpenAI tool JSON and vice versa",
-        parameters_type=Query,
-        response_type=Query,
-    )
+    tool = MockTool()
 
     # Convert Query to OpenAI tool call JSON
     tool_json = tool.to_openai_tool_json()

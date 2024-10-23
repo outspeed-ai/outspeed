@@ -18,7 +18,7 @@ async def test_run():
     2. The output queue receives VADState values when processing real audio.
     """
 
-    silero_vad = SileroVAD(sample_rate=16000)
+    silero_vad = SileroVAD()
     # Create an input queue
     input_queue = AudioStream()
 
@@ -67,7 +67,7 @@ async def test_run_with_speech():
     - speech.mp3 file in the same directory as the test file.
     - pydub library for audio file handling.
     """
-    silero_vad = SileroVAD(sample_rate=16000)
+    silero_vad = SileroVAD()
     input_queue = AudioStream()
 
     # Load the speech.mp3 file
