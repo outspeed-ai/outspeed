@@ -17,11 +17,15 @@ jobs:
     steps:
       # Checkout the code as the first step.
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
+      - run:
+          name: "Install dependencies"
+          command: |
+            poetry install --extras silero --with dev
       - run:
           name: "Run tests"
-          command: "cd test && python -m pytest"
+          command: |
+            cd test
+            poetry run pytest
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
