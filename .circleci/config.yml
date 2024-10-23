@@ -18,6 +18,11 @@ jobs:
       # Checkout the code as the first step.
       - checkout
       - run:
+          name: "Install ffmpeg"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+      - run:
           name: "Install dependencies"
           command: |
             poetry install --extras silero --with dev
