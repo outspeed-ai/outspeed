@@ -89,6 +89,15 @@ To develop on top of the SDK, set environment variable `DEV_INFO` or `DEV_DEBUG`
 | On device models                                             | Planned    | Q4 2024        |
 | Local TTS                                                    | Planned    | Q4 2024        |
 
+## Run CircleCI Tests Locally
+
+Make sure docker is installed and running.
+
+```
+brew install circleci
+circleci local execute run-tests
+```
+
 ## Contribute
 
 We welcome contributions to the Outspeed SDK! If you're interested in contributing, please submit a PR or [contact us](mailto:contact@outspeed.com).
