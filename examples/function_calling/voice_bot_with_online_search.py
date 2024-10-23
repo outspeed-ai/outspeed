@@ -48,6 +48,9 @@ class SearchTool(sp.Tool):
     response_type = SearchResult
 
     async def run(self, query: Query) -> SearchResult:
+        if not os.getenv("EXA_API_KEY"):
+            raise ValueError("EXA_API_KEY is not set in the environment variables.")
+
         url = "https://api.exa.ai/search"
         headers = {
             "accept": "application/json",
