@@ -82,7 +82,7 @@ class OpenAILLM(Plugin):
                         continue
                     self._history.extend(tool_call_response_json)
                 else:
-                    raise ValueError(f"Unknown type in input queue: {type(data)}")
+                    raise ValueError(f"Unknown type in input queue: {data}")
 
                 self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
                 tracing.register_event(tracing.Event.LLM_START)
@@ -232,3 +232,7 @@ class OpenAILLM(Plugin):
                 )
                 logging.info(f"Tool {tool.name} returned: {result} \n")
                 return ToolCallResponseData.from_json(result)
+
+        return ToolCallResponseData.from_json(
+            {"tool_call_id": tool_call["id"], "role": "tool", "content": "Invalid Tool Name"}
+        )
