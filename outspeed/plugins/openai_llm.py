@@ -25,7 +25,7 @@ class OpenAILLM(Plugin):
         system_prompt=None,
         stream: bool = True,
         temperature: float = 1.0,
-        response_format: Optional[Dict[str, Any]] = None,
+        response_format: Union[Dict[str, Any], str] = "text",
         tools: Optional[list[Tool]] = None,
         tool_choice: Literal["auto", "none", "required"] = "auto",
         respond_to_tool_calls: bool = True,
@@ -53,6 +53,10 @@ class OpenAILLM(Plugin):
         self._tool_output_queue = TextStream()
         self._tool_call_tasks = []
 
+    @property
+    def chat_history(self) -> list[dict]:
+        return self._history
+
     async def _stream_chat_completions(self):
         try:
             while True:
@@ -63,7 +67,9 @@ class OpenAILLM(Plugin):
                 if isinstance(data, SessionData):
                     await self.output_queue.put(data)
                     continue
+
                 self._generating = True
+
                 if isinstance(data, str) or isinstance(data, TextData):
                     if (
                         self._history
@@ -76,29 +82,23 @@ class OpenAILLM(Plugin):
                     self._history.extend([item.get_json() for item in data])
                 else:
                     raise ValueError(f"Unknown type in input queue: {type(data)}")
+
                 self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
                 tracing.register_event(tracing.Event.LLM_START)
-                if self._response_format:
-                    chunk_stream = await self._client.chat.completions.create(
-                        model=self._model,
-                        stream=self._stream,
-                        messages=self._history,
-                        response_format=self._response_format,
-                        temperature=self._temperature,
-                        tools=[tool.to_openai_tool_json() for tool in self._tools],
-                        tool_choice="none" if self._history[-1]["role"] == "tool" else self._tool_choice,
-                    )  # type: ignore
-                else:
-                    chunk_stream = await self._client.chat.completions.create(
-                        model=self._model,
-                        stream=self._stream,
-                        messages=self._history,
-                        temperature=self._temperature,
-                        tools=[tool.to_openai_tool_json() for tool in self._tools],
-                        tool_choice="none" if self._history[-1]["role"] == "tool" else self._tool_choice,
-                    )  # type: ignore
+
+                chunk_stream = await self._client.chat.completions.create(
+                    model=self._model,
+                    stream=self._stream,
+                    messages=self._history,
+                    response_format=self._response_format,
+                    temperature=self._temperature,
+                    tools=[tool.to_openai_tool_json() for tool in self._tools],
+                    tool_choice="none" if self._history[-1]["role"] == "tool" else self._tool_choice,
+                )  # type: ignore
+
                 self._history.append({"role": "assistant"})
                 tracing.register_event(tracing.Event.LLM_TTFB)
+
                 if self._stream:
                     async for chunk in chunk_stream:
                         if len(chunk.choices) == 0:
@@ -137,8 +137,10 @@ class OpenAILLM(Plugin):
                         await self.output_queue.put(chunk_stream.choices[0].message.content)
                     elif chunk_stream.choices[0].message.tool_calls:
                         self._history[-1]["tool_calls"] = chunk_stream.choices[0].message.tool_calls
+
                 if self._history[-1].get("tool_calls"):
                     asyncio.create_task(self._handle_function_call_arguments_done(self._history[-1]["tool_calls"]))
+
                 tracing.register_event(tracing.Event.LLM_END)
                 tracing.register_metric(tracing.Metric.LLM_TOTAL_BYTES, len(self._history[-1].get("content", "")))
                 logging.info(
@@ -147,8 +149,11 @@ class OpenAILLM(Plugin):
                     if self._history[-1].get("content")
                     else self._history[-1].get("tool_calls", []),
                 )
+
                 self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
+
                 self._generating = False
+
                 await self.output_queue.put(None)
         except Exception as e:
             logging.error("Error streaming chat completions", e)
