@@ -48,7 +48,6 @@ class OpenAILLM(Plugin):
         self._temperature = temperature
         self._tools = tools
         self._tool_choice = tool_choice
-        self._respond_to_tool_calls = respond_to_tool_calls
         self._tool_output_queue = TextStream()
         self._tool_call_tasks = []
         self._removed_tool_calls = set()
