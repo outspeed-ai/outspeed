@@ -28,7 +28,6 @@ class OpenAILLM(Plugin):
         response_format: Dict[str, Any] = {"type": "text"},
         tools: Optional[list[Tool]] = None,
         tool_choice: Literal["auto", "none", "required"] = "auto",
-        respond_to_tool_calls: bool = True,
     ):
         super().__init__()
         self._model: str = model
