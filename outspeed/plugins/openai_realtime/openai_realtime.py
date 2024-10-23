@@ -55,7 +55,7 @@ class OpenAIRealtime(Plugin):
         silence_duration_ms: int = 200,
         vad_threshold: float = 0.5,
         initiate_conversation_with_greeting: Optional[str] = None,
-        tools: Optional[list[Tool]] = None,
+        tools: list[Tool] = [],
         tool_choice: str = "auto",
         respond_to_tool_calls: bool = True,
     ):
