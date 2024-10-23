@@ -42,6 +42,11 @@ class SearchResult(BaseModel):
 
 
 class SearchTool(sp.Tool):
+    name = "search"
+    description = "Search the web for information"
+    parameters_type = Query
+    response_type = SearchResult
+
     async def run(self, query: Query) -> SearchResult:
         url = "https://api.exa.ai/search"
         headers = {
@@ -75,12 +80,7 @@ class VoiceBot:
         # Initialize the AI services
         self.llm_node = sp.OpenAIRealtime(
             tools=[
-                SearchTool(
-                    name="search",
-                    description="Search the web for information",
-                    parameters_type=Query,
-                    response_type=SearchResult,
-                )
+                SearchTool(),
             ]
         )
 
