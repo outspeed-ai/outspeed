@@ -82,4 +82,6 @@ class ToolCallData(TextData):
 
 
 class ToolCallResponseData(TextData):
-    pass
+    @property
+    def tool_call_id(self):
+        return self.get_json().get("tool_call_id")

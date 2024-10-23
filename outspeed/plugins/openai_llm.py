@@ -19,13 +19,13 @@ from outspeed.utils.vad import VADState
 class OpenAILLM(Plugin):
     def __init__(
         self,
-        model: str = "gpt-3.5-turbo",
+        model: str = "gpt-4o-mini",
         api_key=None,
         base_url=None,
         system_prompt=None,
         stream: bool = True,
         temperature: float = 1.0,
-        response_format: Union[Dict[str, Any], str] = "text",
+        response_format: Dict[str, Any] = {"type": "text"},
         tools: Optional[list[Tool]] = None,
         tool_choice: Literal["auto", "none", "required"] = "auto",
         respond_to_tool_calls: bool = True,
@@ -52,6 +52,7 @@ class OpenAILLM(Plugin):
         self._respond_to_tool_calls = respond_to_tool_calls
         self._tool_output_queue = TextStream()
         self._tool_call_tasks = []
+        self._removed_tool_calls = set()
 
     @property
     def chat_history(self) -> list[dict]:
@@ -71,15 +72,17 @@ class OpenAILLM(Plugin):
                 self._generating = True
 
                 if isinstance(data, str) or isinstance(data, TextData):
-                    if (
-                        self._history
-                        and self._history[-1]["role"] == "assistant"
-                        and self._history[-1].get("tool_calls")
-                    ):
-                        self._history.pop()
+                    if self._history and self._history[-1].get("tool_calls"):
+                        tool_calls = self._history.pop().get("tool_calls")
+                        self._removed_tool_calls.update([tool_call["id"] for tool_call in tool_calls])
                     self._history.append({"role": "user", "content": data})
                 elif isinstance(data, list) and all(isinstance(item, ToolCallResponseData) for item in data):
-                    self._history.extend([item.get_json() for item in data])
+                    tool_call_response_json = [
+                        item.get_json() for item in data if item.tool_call_id not in self._removed_tool_calls
+                    ]
+                    if not tool_call_response_json:
+                        continue
+                    self._history.extend(tool_call_response_json)
                 else:
                     raise ValueError(f"Unknown type in input queue: {type(data)}")
 
@@ -202,10 +205,12 @@ class OpenAILLM(Plugin):
         self._interrupt_task = asyncio.create_task(self._interrupt())
 
     async def _handle_function_call_arguments_done(self, tool_calls: list[dict]):
+        current_tool_calls_tasks = []
         try:
             for tool_call in tool_calls:
-                self._tool_call_tasks.append(asyncio.create_task(self._run_tool(tool_call)))
-            results = await asyncio.gather(*self._tool_call_tasks)
+                current_tool_calls_tasks.append(asyncio.create_task(self._run_tool(tool_call)))
+            self._tool_call_tasks.extend(current_tool_calls_tasks)
+            results = await asyncio.gather(*current_tool_calls_tasks)
             await self._tool_output_queue.put(results)
         except Exception as e:
             logging.error(f"Error handling function call arguments: {e} \n")
