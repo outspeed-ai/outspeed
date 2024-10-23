@@ -1,9 +1,9 @@
-import asyncio
-from typing import Any, Dict, List, Literal, Optional, Type, TypedDict
+from typing import Dict, List, Literal, Type, TypedDict
 
 import openai
-from outspeed.data import TextData
 from pydantic import BaseModel
+
+from outspeed.data import TextData
 
 
 class ToolType(TypedDict):
