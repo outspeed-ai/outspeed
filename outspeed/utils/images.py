@@ -3,6 +3,12 @@ import io
 
 import numpy as np
 from PIL import Image
+from enum import Enum
+
+
+class VideoCodec(str, Enum):
+    H264 = "video/H264"
+    VP8 = "video/VP8"
 
 
 def convert_image_to_url(image: Image.Image, format: str = "jpeg") -> str:

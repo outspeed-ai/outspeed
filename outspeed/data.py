@@ -3,8 +3,8 @@ import fractions
 import io
 import json
 import time
-from typing import Any, Dict, Optional, Union
 import uuid
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from av import AudioFrame, VideoFrame
@@ -51,13 +51,44 @@ class AudioData:
         """
         if not isinstance(data, (bytes, AudioFrame)):
             raise ValueError("AudioData data must be bytes or av.AudioFrame")
+
+        if isinstance(data, AudioFrame) and data.format.name != "s16":
+            raise ValueError(f"AudioData only supports s16 format. Received: {data.format}")
+
         self.data: Union[bytes, AudioFrame] = data
-        self.sample_rate: int = sample_rate
-        self.channels: int = channels
-        self.sample_width: int = sample_width
+        self._sample_rate: int = sample_rate
+        self._channels: int = channels
+        self._sample_width: int = sample_width
         self.format: str = format
         self.extra_tags: Dict[str, Any] = extra_tags
         self.relative_start_time: float = relative_start_time or Clock.get_playback_time()
+
+    @property
+    def sample_rate(self) -> int:
+        if isinstance(self.data, AudioFrame):
+            return self.data.sample_rate
+        else:
+            return self._sample_rate
+
+    @property
+    def channels(self) -> int:
+        if isinstance(self.data, AudioFrame):
+            if self.data.layout.name == "stereo":
+                return 2
+            else:
+                return 1
+        else:
+            return self._channels
+
+    @property
+    def sample_width(self) -> int:
+        if isinstance(self.data, AudioFrame):
+            if self.data.format.name == "s16":
+                return 2
+            else:
+                raise ValueError("Unsupported audio format")
+        else:
+            return self._sample_width
 
     def get_bytes(self) -> bytes:
         """
@@ -147,10 +178,8 @@ class AudioData:
             # Set audio format
             if self.format == "wav":
                 format = "s16"
-            elif self.format == "opus":
-                format = "opus"
             else:
-                raise ValueError("AudioData format must be wav or opus")
+                raise ValueError("AudioData format must be wav")
 
             # Create AudioFrame from numpy array
             frame = AudioFrame.from_ndarray(array, format=format, layout=channel_layout)
@@ -161,7 +190,7 @@ class AudioData:
         else:
             raise ValueError("AudioData data must be bytes or av.AudioFrame")
 
-    def resample(self, sample_rate: int) -> "AudioData":
+    def resample(self, sample_rate: int, channels: int = 1) -> "AudioData":
         """
         Resample the audio data to a new sample rate.
 
@@ -171,7 +200,7 @@ class AudioData:
         Returns:
             AudioData: The resampled audio data.
         """
-        if self.sample_rate == sample_rate:
+        if self.sample_rate == sample_rate and self.channels == channels:
             return self
 
         audio_segment = AudioSegment(
@@ -184,11 +213,52 @@ class AudioData:
         # Resample the audio to 16000 Hz
         resampled_audio = audio_segment.set_frame_rate(sample_rate)
 
+        # Change the number of channels
+        resampled_audio = resampled_audio.set_channels(channels)
+
         # Convert the resampled audio back to bytes
         data = resampled_audio.raw_data
 
         return AudioData(
-            data, sample_rate, self.channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
+            data, sample_rate, channels, self.sample_width, self.format, self.relative_start_time, self.extra_tags
+        )
+
+    def change_volume(self, percentage: float) -> "AudioData":
+        """
+        Change the volume to a percentage of the original volume.
+
+        Args:
+            percentage (float): The desired volume as a percentage (e.g., 50 for 50%).
+
+        Returns:
+            AudioData: A new instance with the adjusted volume.
+
+        Raises:
+            ValueError: If the percentage is not between 0 and 100.
+        """
+        if percentage == 1:
+            return self
+
+        if not 0 < percentage < 1:
+            raise ValueError("Percentage must be between 0 and 100")
+
+        # Create an AudioSegment from the current audio data
+        audio_segment = AudioSegment(
+            data=self.get_bytes(), sample_width=self.sample_width, frame_rate=self.sample_rate, channels=self.channels
+        )
+
+        # Calculate gain in dB
+        change_db = 20 * np.log10(percentage)
+        adjusted_audio = audio_segment.apply_gain(change_db)
+
+        return AudioData(
+            data=adjusted_audio.raw_data,
+            sample_rate=self.sample_rate,
+            channels=self.channels,
+            sample_width=self.sample_width,
+            format=self.format,
+            relative_start_time=self.relative_start_time,
+            extra_tags=self.extra_tags,
         )
 
 
