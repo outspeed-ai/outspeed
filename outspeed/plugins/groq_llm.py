@@ -1,20 +1,11 @@
-import asyncio
-import json
-import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Literal, Optional
 
-from openai import AsyncOpenAI
-
-from outspeed.plugins.base_plugin import Plugin
-from outspeed.streams import TextStream
-from outspeed.utils import tracing
-from outspeed.data import SessionData
-from outspeed.streams import VADStream
-from outspeed.utils.vad import VADState
+from outspeed.plugins.openai_llm import OpenAILLM
+from outspeed.tool import Tool
 
 
-class GroqLLM(Plugin):
+class GroqLLM(OpenAILLM):
     """
     A plugin for interacting with Groq's LLM API.
 
@@ -30,7 +21,9 @@ class GroqLLM(Plugin):
         system_prompt: Optional[str] = None,
         stream: bool = True,
         temperature: float = 1.0,
-        response_format: Optional[Dict[str, Any]] = None,
+        response_format: Dict[str, Any] = {"type": "text"},
+        tools: Optional[list[Tool]] = None,
+        tool_choice: Literal["auto", "none", "required"] = "auto",
     ):
         """
         Initialize the GroqLLM plugin.
@@ -44,129 +37,20 @@ class GroqLLM(Plugin):
             temperature (float): The temperature parameter for the LLM.
             response_format (Optional[Dict[str, Any]]): The desired response format.
         """
-        super().__init__()
-        self._model: str = model
-        self._api_key: str = api_key or os.getenv("GROQ_API_KEY")
-        if not self._api_key:
+        api_key: str = api_key or os.getenv("GROQ_API_KEY")
+        if not api_key:
             raise ValueError("Groq API key is required")
-        self._client: AsyncOpenAI = AsyncOpenAI(api_key=self._api_key, base_url="https://api.groq.com/openai/v1")
-        self._history: List[Dict[str, str]] = []
-        self.output_queue: TextStream = TextStream()
-        self.chat_history_queue: TextStream = TextStream()
-        self._generating: bool = False
-        self._stream: bool = stream
-        self._response_format: Optional[Dict[str, Any]] = response_format
-        self._system_prompt: Optional[str] = system_prompt
-        if self._system_prompt is not None:
-            self._history.append({"role": "system", "content": self._system_prompt})
-        self._temperature: float = temperature
 
-        # These will be set later
-        self.input_queue: Optional[TextStream] = None
-        self.interrupt_queue: Optional[asyncio.Queue] = None
-        self._task: Optional[asyncio.Task] = None
-        self._interrupt_task: Optional[asyncio.Task] = None
+        base_url: str = base_url or "https://api.groq.com/openai/v1"
 
-    async def _stream_chat_completions(self) -> None:
-        """
-        Asynchronously stream chat completions from the Groq API.
-
-        This method continuously reads from the input queue, sends requests to the Groq API,
-        and writes the responses to the output queue.
-        """
-        while True:
-            text_chunk: Optional[str] = await self.input_queue.get()
-            if text_chunk is None:
-                continue
-            if isinstance(text_chunk, SessionData):
-                await self.output_queue.put(text_chunk)
-                continue
-            self._generating = True
-            tracing.register_event(tracing.Event.LLM_START)
-
-            # Add user message to history and chat history queue
-            self._history.append({"role": "user", "content": text_chunk})
-            self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
-
-            # Create chat completion request
-            completion_kwargs: Dict[str, Any] = {
-                "model": self._model,
-                "stream": self._stream,
-                "messages": self._history,
-                "temperature": self._temperature,
-            }
-            if self._response_format:
-                completion_kwargs["response_format"] = self._response_format
-
-            chunk_stream = await self._client.chat.completions.create(**completion_kwargs)
-
-            # Prepare for assistant's response
-            self._history.append({"role": "assistant", "content": ""})
-            first_chunk = True
-
-            if self._stream:
-                async for chunk in chunk_stream:
-                    if first_chunk:
-                        tracing.register_event(tracing.Event.LLM_TTFB)
-                        first_chunk = False
-                    if len(chunk.choices) == 0:
-                        continue
-                    elif chunk.choices[0].delta.content:
-                        self._history[-1]["content"] += chunk.choices[0].delta.content
-                        await self.output_queue.put(chunk.choices[0].delta.content)
-            else:
-                self._history[-1]["content"] = chunk_stream.choices[0].message.content
-                await self.output_queue.put(chunk_stream.choices[0].message.content)
-                tracing.register_event(tracing.Event.LLM_TTFB)
-
-            tracing.register_event(tracing.Event.LLM_END)
-            tracing.register_metric(tracing.Metric.LLM_TOTAL_BYTES, len(self._history[-1]["content"]))
-            print("llm", self._history[-1]["content"])
-            self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
-            self._generating = False
-            await self.output_queue.put(None)
-
-    def run(self, input_queue: TextStream) -> Tuple[TextStream, TextStream]:
-        """
-        Start the LLM plugin.
-
-        Args:
-            input_queue (TextStream): The input queue to read from.
-
-        Returns:
-            Tuple[TextStream, TextStream]: The output queue and chat history queue.
-        """
-        self.input_queue = input_queue
-        self._task = asyncio.create_task(self._stream_chat_completions())
-        return self.output_queue, self.chat_history_queue
-
-    async def close(self) -> None:
-        """
-        Close the LLM plugin by cancelling the main task.
-        """
-        if self._task:
-            self._task.cancel()
-
-    async def _interrupt(self):
-        while True:
-            vad_state: VADState = await self.interrupt_queue.get()
-            if vad_state == VADState.SPEAKING and (not self.input_queue.empty() or not self.output_queue.empty()):
-                self._task.cancel()
-                try:
-                    await self._task
-                except asyncio.CancelledError:
-                    pass
-                while not self.output_queue.empty():
-                    self.output_queue.get_nowait()
-                while not self.input_queue.empty():
-                    self.input_queue.get_nowait()
-                logging.info("Done cancelling LLM")
-                self._generating = False
-                self._task = asyncio.create_task(self._stream_chat_completions())
-
-    def set_interrupt_stream(self, interrupt_stream: VADStream):
-        if isinstance(interrupt_stream, VADStream):
-            self.interrupt_queue = interrupt_stream
-        else:
-            raise ValueError("Interrupt stream must be a VADStream")
-        self._interrupt_task = asyncio.create_task(self._interrupt())
+        super().__init__(
+            model=model,
+            stream=stream,
+            temperature=temperature,
+            response_format=response_format,
+            api_key=api_key,
+            base_url=base_url,
+            system_prompt=system_prompt,
+            tools=tools,
+            tool_choice=tool_choice,
+        )

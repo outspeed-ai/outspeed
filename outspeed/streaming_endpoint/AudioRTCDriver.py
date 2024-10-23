@@ -67,6 +67,8 @@ class AudioRTCDriver(MediaStreamTrack):
 
     async def run_output(self):
         try:
+            if not self.audio_output_q:
+                return
             while True:
                 while self.audio_data_q.qsize() > 2:
                     await asyncio.sleep(0.01)

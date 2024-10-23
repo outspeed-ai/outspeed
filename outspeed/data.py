@@ -1,6 +1,7 @@
 import base64
 import fractions
 import io
+import json
 import time
 import uuid
 from typing import Any, Dict, Optional, Union
@@ -410,9 +411,10 @@ class TextData:
 
     def __init__(
         self,
-        data: Optional[str] = None,
+        data: str,
         absolute_time: Optional[float] = None,
         relative_time: Optional[float] = None,
+        extra_tags: Dict[str, Any] = {},
     ):
         """
         Initialize a TextData object.
@@ -427,11 +429,28 @@ class TextData:
         Raises:
             ValueError: If the data is not of type str.
         """
-        if data is not None and not isinstance(data, str):
+        if not isinstance(data, str):
             raise ValueError("TextData data must be str")
-        self.data: Optional[str] = data
+        self.data: str = data
         self.absolute_time: float = absolute_time or time.time()
         self.relative_time: float = relative_time or 0.0
+        self.extra_tags: Dict[str, Any] = extra_tags
+
+    def get_text(self) -> str:
+        return self.data
+
+    def get_json(self) -> Dict[str, Any]:
+        try:
+            return json.loads(self.data)
+        except json.JSONDecodeError:
+            raise ValueError(f"TextData data is not valid JSON: {self.data}")
+
+    @classmethod
+    def from_json(cls, data: Dict[str, Any]) -> "TextData":
+        try:
+            return cls(json.dumps(data))
+        except json.JSONDecodeError:
+            raise ValueError(f"TextData data is not valid JSON: {data}")
 
 
 class SessionData:
