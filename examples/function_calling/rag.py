@@ -18,7 +18,7 @@ def check_outspeed_version():
 
     from packaging import version
 
-    required_version = "0.1.151"
+    required_version = "0.2.1"
 
     try:
         current_version = importlib.metadata.version("outspeed")
