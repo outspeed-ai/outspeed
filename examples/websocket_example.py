@@ -14,7 +14,7 @@ class WebsocketVoiceBot:
 
     async def setup(self):
         self.test_str = "hello"
-        self.deepgram_node = sp.DeepgramSTT(sample_rate=48000)
+        self.deepgram_node = sp.DeepgramSTT()
         self.llm_node = sp.FireworksLLM(
             system_prompt="You are a helpful assistant who answers questions about Outspeed. Outspeed builds tooling and infrastructure for Realtime AI applications.",
             temperature=0.9,
