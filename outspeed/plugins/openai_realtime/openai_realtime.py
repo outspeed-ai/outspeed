@@ -420,3 +420,18 @@ class OpenAIRealtime(Plugin):
 
     async def _handle_unknown(self, msg):
         logging.error("Unknown response type in OpenAI Realtime: %s \n", msg)
+
+    async def _interrupt_all(self):
+        """
+        Handle interruptions (e.g., when the user starts speaking).
+        Cancels ongoing TTS generation and clears the output queue.
+        """
+        while not self.input_queue.empty():
+            self.input_queue.get_nowait()
+        while not self.text_output_queue.empty():
+            self.text_output_queue.get_nowait()
+        while not self.audio_output_queue.empty():
+            self.audio_output_queue.get_nowait()
+        await self._ws.send(json.dumps({"type": ClientEvent.INPUT_AUDIO_BUFFER_CLEAR}))
+        await self._ws.send(json.dumps({"type": ClientEvent.RESPONSE_CANCEL}))
+        logging.info("Done cancelling TTS generation \n")
