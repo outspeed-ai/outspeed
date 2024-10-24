@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import List, Union
 
 from outspeed.streams import AudioStream, ByteStream, Stream, TextStream, VideoStream
@@ -45,9 +46,17 @@ def merge(input_queues: List[Stream]) -> Union[AudioStream, VideoStream, TextStr
         Args:
             queue (Stream): The input stream to read from.
         """
-        while True:
-            item = await queue.get()
-            output_queue.put_nowait(item)
+        try:
+            while True:
+                item = await queue.get()
+                output_queue.put_nowait(item)
+        except asyncio.CancelledError:
+            pass
+        except RuntimeError:
+            # This is expected when event loop is closed
+            pass
+        except Exception as e:
+            logging.error(f"Error in merge: {e}")
 
     # Create a task for each input queue to continuously read and merge data
     for q in input_queues:

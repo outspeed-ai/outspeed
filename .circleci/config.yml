@@ -22,6 +22,9 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y ffmpeg
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum("poetry.lock") }}
       - run:
           name: "Install dependencies"
           command: |
@@ -29,9 +32,12 @@ jobs:
       - run:
           name: "Run tests"
           command: |
-            cd test
             poetry run pytest
-
+      - save_cache:
+          paths:
+            - ~/.cache/pypoetry
+            - ~/.cache/pip
+          key: v1-dependencies-{{ checksum("poetry.lock") }}
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
