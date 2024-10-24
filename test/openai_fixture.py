@@ -1,6 +1,7 @@
 from unittest import mock
 import pytest
 import asyncio
+import json
 
 
 @pytest.fixture
@@ -10,43 +11,25 @@ def mock_openai_client():
     async def mock_create_side_effect(*args, **kwargs):
         """Mock the `chat.completions.create` method to return dummy response chunks."""
 
-        class MockChatCompletionStream:
-            """Mock stream returned by `chat.completions.create`."""
+        response_format = kwargs.get("response_format")
+        tool_choice = kwargs.get("tool_choice")
 
-            async def __aiter__(self):
-                # Define a sequence of dummy chunks
-                chunks = [
-                    mock.Mock(
-                        choices=[
-                            mock.Mock(
-                                delta=mock.Mock(content="Hello, "),
-                            )
-                        ]
-                    ),
-                    mock.Mock(
-                        choices=[
-                            mock.Mock(
-                                delta=mock.Mock(content="this is a "),
-                            )
-                        ]
-                    ),
-                    mock.Mock(
-                        choices=[
-                            mock.Mock(
-                                delta=mock.Mock(content="mocked response."),
-                            )
-                        ]
-                    ),
+        if response_format and response_format.get("type") == "json":
+            MockChatCompletion = mock.Mock(
+                choices=[
+                    mock.Mock(message=mock.Mock(content=json.dumps({"message": "Hello, this is a mocked response."})))
                 ]
-                for chunk in chunks:
-                    yield chunk
+            )
+        else:
+            MockChatCompletion = mock.Mock(
+                choices=[mock.Mock(message=mock.Mock(content="Hello, this is a mocked response."))]
+            )
 
-        MockChatCompletion = mock.Mock(
-            choices=[
-                mock.Mock(
-                    message=mock.Mock(content="Hello, this is a mocked response."),
-                )
-            ]
+        if tool_choice not in ["auto", "none", "required", None]:
+            raise ValueError(f"Invalid tool_choice: {tool_choice}")
+
+        MockChatCompletionStream = mock.Mock(
+            choices=[mock.Mock(message=mock.Mock(content="Hello, this is a mocked response."))]
         )
 
         if "messages" not in kwargs:
@@ -54,8 +37,11 @@ def mock_openai_client():
         if "model" not in kwargs:
             raise TypeError("model is required")
 
+        if kwargs.get("tool_choice") not in ["auto", "none", "required", None]:
+            raise ValueError(f"Invalid tool_choice: {kwargs.get('tool_choice')}")
+
         if kwargs.get("stream"):
-            return MockChatCompletionStream()
+            return MockChatCompletionStream
         return MockChatCompletion
 
     with mock.patch("outspeed.plugins.openai_llm.AsyncOpenAI", new_callable=mock.MagicMock) as MockAsyncOpenAI:
