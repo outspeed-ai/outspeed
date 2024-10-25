@@ -1,3 +1,4 @@
+import logging
 
 
 class TextRTCDriver:
@@ -22,4 +23,8 @@ class TextRTCDriver:
             text = await self.text_output_q.get()
             if not self._track:
                 continue
-            self._track.send(text)
+
+            if isinstance(text, str):
+                self._track.send(text)
+            else:
+                logging.error(f"Unsupported text: {text}")

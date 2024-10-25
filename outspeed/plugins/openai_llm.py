@@ -93,11 +93,11 @@ class OpenAILLM(Plugin):
                     "messages": self._history,
                     "response_format": self._response_format,
                     "temperature": self._temperature,
-                    "tool_choice": "none" if self._history[-1]["role"] == "tool" else self._tool_choice,
                 }
 
                 if self._tools:
                     params["tools"] = [tool.to_openai_tool_json() for tool in self._tools]
+                    params["tool_choice"] = "none" if self._history[-1]["role"] == "tool" else self._tool_choice
 
                 chunk_stream = await self._client.chat.completions.create(**params)
 
