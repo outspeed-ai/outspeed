@@ -71,7 +71,7 @@ async def test_run_with_speech():
     input_queue = AudioStream()
 
     # Load the speech.mp3 file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     speech_file = os.path.join(script_dir, "data/speech.mp3")
     audio = AudioSegment.from_mp3(speech_file)
 
