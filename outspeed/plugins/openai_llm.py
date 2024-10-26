@@ -87,15 +87,19 @@ class OpenAILLM(Plugin):
                 self.chat_history_queue.put_nowait(json.dumps(self._history[-1]))
                 tracing.register_event(tracing.Event.LLM_START)
 
-                chunk_stream = await self._client.chat.completions.create(
-                    model=self._model,
-                    stream=self._stream,
-                    messages=self._history,
-                    response_format=self._response_format,
-                    temperature=self._temperature,
-                    tools=[tool.to_openai_tool_json() for tool in self._tools],
-                    tool_choice="none" if self._history[-1]["role"] == "tool" else self._tool_choice,
-                )  # type: ignore
+                params = {
+                    "model": self._model,
+                    "stream": self._stream,
+                    "messages": self._history,
+                    "response_format": self._response_format,
+                    "temperature": self._temperature,
+                }
+
+                if self._tools:
+                    params["tools"] = [tool.to_openai_tool_json() for tool in self._tools]
+                    params["tool_choice"] = "none" if self._history[-1]["role"] == "tool" else self._tool_choice
+
+                chunk_stream = await self._client.chat.completions.create(**params)
 
                 self._history.append({"role": "assistant"})
                 tracing.register_event(tracing.Event.LLM_TTFB)
