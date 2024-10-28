@@ -56,7 +56,7 @@ class VoiceBot:
         self.vad_node = sp.SileroVAD(min_volume=0)
 
     @sp.streaming_endpoint()
-    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
+    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream):
         """
         Handle the main processing loop for the VoiceBot.
 
@@ -92,7 +92,9 @@ class VoiceBot:
         self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
         self.tts_node.set_interrupt_stream(vad_stream.clone())
 
-        return tts_stream
+        chat_history_stream = sp.filter(chat_history_stream, lambda x: json.loads(x).get("role") != "user")
+
+        return tts_stream, chat_history_stream
 
     async def teardown(self) -> None:
         """
