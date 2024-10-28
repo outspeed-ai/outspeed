@@ -42,9 +42,15 @@ class OpenAILLM(Plugin):
         self._generating = False
         self._stream = stream
         self._response_format = response_format
+
         self._system_prompt = system_prompt
         if self._system_prompt is not None:
             self._history.append({"role": "system", "content": self._system_prompt})
+
+        if self._response_format == {"type": "json_object"} and (
+            not self._system_prompt or "json" not in self._system_prompt.lower()
+        ):
+            raise ValueError("System prompt must contain the word 'json' if response format is json_object")
         self._temperature = temperature
         self._tools = tools
         self._tool_choice = tool_choice
@@ -141,7 +147,18 @@ class OpenAILLM(Plugin):
                         self._history[-1]["content"] = chunk_stream.choices[0].message.content
                         await self.output_queue.put(chunk_stream.choices[0].message.content)
                     elif chunk_stream.choices[0].message.tool_calls:
-                        self._history[-1]["tool_calls"] = chunk_stream.choices[0].message.tool_calls
+                        self._history[-1]["tool_calls"] = []
+                        for tool in chunk_stream.choices[0].message.tool_calls:
+                            self._history[-1]["tool_calls"].append(
+                                {
+                                    "id": tool.id,
+                                    "type": tool.type,
+                                    "function": {
+                                        "name": tool.function.name,
+                                        "arguments": tool.function.arguments,
+                                    },
+                                }
+                            )
 
                 if self._history[-1].get("tool_calls"):
                     asyncio.create_task(self._handle_function_call_arguments_done(self._history[-1]["tool_calls"]))

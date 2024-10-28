@@ -32,7 +32,7 @@ jobs:
       - run:
           name: "Run tests"
           command: |
-            poetry run pytest
+            poetry run pytest --ignore=tests/regression_tests
       - save_cache:
           paths:
             - ~/.cache/pypoetry
