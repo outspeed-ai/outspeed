@@ -4,7 +4,7 @@ import logging
 import time
 
 from aiortc import MediaStreamTrack
-from av import AudioResampler
+from av import AudioResampler, AudioFrame
 
 from outspeed.data import AudioData, SessionData
 
@@ -40,7 +40,7 @@ class AudioRTCDriver(MediaStreamTrack):
         )
 
     async def recv(self):
-        frame = await self.audio_data_q.get()
+        frame: AudioFrame = await self.audio_data_q.get()
         data_time = frame.samples / frame.sample_rate
         if self._start is None:
             self._start = time.time() + data_time
