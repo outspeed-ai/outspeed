@@ -1,9 +1,11 @@
+import av
 import sys
 
 if sys.version_info[:2] < (3, 9):
     raise RuntimeError("This version of Outspeed requires at least Python 3.9")
 if sys.version_info[:2] >= (3, 13):
-    raise RuntimeError("This version of Outspeed does not support Python 3.13+")
+    raise RuntimeError(
+        "This version of Outspeed does not support Python 3.13+")
 
 
 import logging
@@ -17,6 +19,8 @@ import coloredlogs
 # Sets SSL cert file to certifi's trusted certificate bundle
 # ref: https://stackoverflow.com/a/42334357,
 # ref: https://www.happyassassin.net/posts/2015/01/12/a-note-about-ssltls-trusted-certificate-stores-and-platforms/
+
+
 def cross_platform_where():
     if platform.system() == 'Darwin':  # macOS
         if os.path.exists('/etc/ssl/cert.pem'):
@@ -33,7 +37,9 @@ def cross_platform_where():
     else:  # Windows and others
         return certifi.where()
 
+
 os.environ['SSL_CERT_FILE'] = cross_platform_where()
+
 
 def configure_logging(level=logging.INFO):
     """
@@ -46,7 +52,8 @@ def configure_logging(level=logging.INFO):
     # By default the install() function installs a handler on the root logger,
     # this means that log messages from your code and log messages from the
     # libraries that you use will all show up on the terminal.
-    coloredlogs.install(level=level, fmt="%(asctime)s %(levelname)s %(message)s")
+    coloredlogs.install(
+        level=level, fmt="%(asctime)s %(levelname)s %(message)s")
 
     # If you don't want to see log messages from libraries, you can pass a
 
@@ -60,6 +67,7 @@ configure_logging()
 try:
     from .app import App  # noqa: F401
     from .data import AudioData, ImageData, SessionData, TextData  # noqa: F401
+    from .ops.filter import filter  # noqa: F401
     from .ops.map import map  # noqa: F401
     from .ops.merge import merge  # noqa: F401
     from .plugins.azure_stt import AzureTranscriber  # noqa: F401
@@ -93,7 +101,6 @@ except Exception:
     print()
     raise
 
-import av
 
 av.logging.set_level(av.logging.PANIC)
 
@@ -111,6 +118,7 @@ __all__ = [
     "DeepgramSTT",
     "GroqLLM",
     "TokenAggregator",
+    "filter",
     "map",
     "merge",
     "AzureTTS",
