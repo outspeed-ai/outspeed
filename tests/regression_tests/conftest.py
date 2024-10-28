@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 PARENT_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def load_env_file():
     """Load the environment variables from the .env file."""
 
