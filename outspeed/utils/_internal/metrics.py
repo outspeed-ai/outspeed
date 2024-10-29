@@ -41,6 +41,10 @@ class Metric(Enum):
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
+backend_metrics_url = None
+if BACKEND_URL:
+    backend_metrics_url = f"{BACKEND_URL}/job-metrics"
+
 
 def send_metric(metric: Metric, value: Optional[Any] = None):
     """
@@ -51,7 +55,7 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
         value (Optional[Any]): The value to send. If not provided, the current timestamp will be used.
     """
 
-    if not BACKEND_URL:
+    if not backend_metrics_url:
         logging.info("Skipped metric push...")
         return
 

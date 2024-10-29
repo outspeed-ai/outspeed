@@ -11,9 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from outspeed.utils._internal.metrics import Metric, send_metric
 
-BACKEND_URL = "https://webhook.site/1f71e9c5-2331-44cc-b015-d269d4763fd1"
-BACKEND_URL = "http://0.0.0.0/job-metrics"
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
