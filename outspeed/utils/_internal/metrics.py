@@ -68,7 +68,7 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
         value = datetime.datetime.now().timestamp()
 
     res = requests.post(
-        BACKEND_URL,
+        backend_metrics_url,
         json={
             "job_id": job_id,
             metric.value: value,
