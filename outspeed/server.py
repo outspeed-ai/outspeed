@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import logging
 import os
 import ssl
@@ -7,6 +8,18 @@ from typing import Dict, List, Optional
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from outspeed.utils._internal.metrics import Metric, send_metric
+
+BACKEND_URL = "https://webhook.site/1f71e9c5-2331-44cc-b015-d269d4763fd1"
+BACKEND_URL = "http://0.0.0.0/job-metrics"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    send_metric(Metric.SDK_SERVER_STARTED)
+    yield
+    send_metric(Metric.SDK_SERVER_SHUTDOWN)
 
 
 class RealtimeServer:
@@ -34,7 +47,7 @@ class RealtimeServer:
         """
         if self._initialized:
             return
-        self.app: FastAPI = FastAPI()
+        self.app: FastAPI = FastAPI(lifespan=lifespan)
         self.app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
         self.HOSTNAME: str = "0.0.0.0"
         self.PORT: int = int(os.getenv("HTTP_PORT", 8080))
