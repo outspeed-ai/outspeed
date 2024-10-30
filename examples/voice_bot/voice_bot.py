@@ -6,16 +6,13 @@ import outspeed as sp
 @sp.App()
 class VoiceBot:
     """
-    VoiceBot class represents a voice-based AI assistant.
-
     This class handles the setup, running, and teardown of various AI services
     used to process audio input, generate responses, and convert text to speech.
     """
 
     async def setup(self) -> None:
         """
-        This method is called when the app starts. It should be used to set up
-        services, load models, and perform any necessary initialization.
+        This method is called when the app starts. It should be used to set up services, load models, and perform any necessary initialization.
         """
         # Initialize the AI services
         self.deepgram_node = sp.DeepgramSTT()
@@ -31,8 +28,7 @@ class VoiceBot:
     @sp.streaming_endpoint()
     async def run(self, audio_input_stream: sp.AudioStream, text_input_stream: sp.TextStream):
         """
-        It sets up and runs the various AI services in a pipeline to process audio input and
-        generate audio output.
+        It sets up and runs the various AI services in a pipeline to process audio input and generate audio output.
         """
         # Set up the AI service pipeline
         deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_stream)
