@@ -46,6 +46,10 @@ backend_metrics_url = None
 if BACKEND_URL and JOB_METRICS_ENDPOINT:
     backend_metrics_url = BACKEND_URL + JOB_METRICS_ENDPOINT
 
+    # delete the environment variables
+    del os.environ["BACKEND_URL"]
+    del os.environ["JOB_METRICS_ENDPOINT"]
+
 
 def send_metric(metric: Metric, value: Optional[Any] = None):
     """
