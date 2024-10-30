@@ -44,7 +44,16 @@ class VoiceBot:
         This method is called when the app starts. It should be used to set up
         services, load models, and perform any necessary initialization.
         """
-        pass
+        # Initialize the AI services
+        self.deepgram_node = sp.DeepgramSTT()
+        self.llm_node = sp.GroqLLM(
+            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
+        )
+        self.token_aggregator_node = sp.TokenAggregator()
+        self.tts_node = sp.CartesiaTTS(
+            voice_id="95856005-0332-41b0-935f-352e296aa0df",
+            volume=0.7,
+        )
 
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream):
@@ -61,17 +70,6 @@ class VoiceBot:
         Returns:
             sp.AudioStream: The output stream of generated audio responses.
         """
-        # Initialize the AI services
-        self.deepgram_node = sp.DeepgramSTT()
-        self.llm_node = sp.GroqLLM(
-            system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
-        )
-        self.token_aggregator_node = sp.TokenAggregator()
-        self.tts_node = sp.CartesiaTTS(
-            voice_id="95856005-0332-41b0-935f-352e296aa0df",
-            volume=0.7,
-        )
-
         # Set up the AI service pipeline
         deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_queue)
 
