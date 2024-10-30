@@ -3,43 +3,17 @@ import json
 import outspeed as sp
 
 
-def check_outspeed_version():
-    import importlib.metadata
-
-    from packaging import version
-
-    required_version = "0.2.0"
-
-    try:
-        current_version = importlib.metadata.version("outspeed")
-        if version.parse(current_version) < version.parse(required_version):
-            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
-        else:
-            print(f"Outspeed version {current_version} meets the requirement.")
-    except importlib.metadata.PackageNotFoundError:
-        raise ValueError("Outspeed package is not installed.")
-
-
-check_outspeed_version()
-
-
 @sp.App()
 class VoiceBot:
     """
-    VoiceBot class represents a voice-based AI assistant.
-
     This class handles the setup, running, and teardown of various AI services
     used to process audio input, generate responses, and convert text to speech.
     """
 
     async def setup(self) -> None:
         """
-        Initialize the VoiceBot.
-
-        This method is called when the app starts. It should be used to set up
-        services, load models, and perform any necessary initialization.
+        This method is called when the app starts. It should be used to set up services, load models, and perform any necessary initialization.
         """
-        # Initialize the AI services
         self.transcriber_node = sp.AzureTranscriber(languages=["en-US", "fr-FR"])
         self.llm_node = sp.OpenAILLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses. You can speak English and French. Reply in the same language as the user's response.",
@@ -56,19 +30,8 @@ class VoiceBot:
     @sp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
         """
-        Handle the main processing loop for the VoiceBot.
-
-        This method is called for each new connection request. It sets up and
-        runs the various AI services in a pipeline to process audio input and
-        generate audio output.
-
-        Args:
-            audio_input_queue (sp.AudioStream): The input stream of audio data.
-
-        Returns:
-            sp.AudioStream: The output stream of generated audio responses.
+        It sets up and runs the various AI services in a pipeline to process audio input and generate audio output.
         """
-        # Set up the AI service pipeline
         transcriber_stream: sp.TextStream = self.transcriber_node.run(audio_input_queue)
 
         vad_stream: sp.VADStream = self.vad_node.run(audio_input_queue.clone())
@@ -95,9 +58,6 @@ class VoiceBot:
     async def teardown(self) -> None:
         """
         Clean up resources when the VoiceBot is shutting down.
-
-        This method is called when the app stops or is shut down unexpectedly.
-        It should be used to release resources and perform any necessary cleanup.
         """
         await self.transcriber_node.close()
         await self.llm_node.close()
