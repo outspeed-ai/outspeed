@@ -96,7 +96,7 @@ class DeepgramSTT(Plugin):
         """Close the Deepgram connection and clean up resources."""
         await asyncio.sleep(0.2)
 
-        await self._session.close()
+        asyncio.create_task(self._session.close())
         if self._task:
             self._task.cancel()
 
