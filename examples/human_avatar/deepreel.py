@@ -8,13 +8,13 @@ import uuid
 from typing import Any, Dict, List, Tuple
 
 import websockets
-from PIL import Image
 
 import outspeed as sp
 
-# Set up basic logging configuration
-logging.basicConfig(level=logging.INFO)
 FRAME_RATE = 25
+
+### TODO: change to your websocket url
+DEEPREEL_WEBSOCKET_URL = ""
 
 
 class DeepreelPlugin:
@@ -44,12 +44,6 @@ class DeepreelPlugin:
     def run(self, audio_input_stream: sp.AudioStream) -> Tuple[sp.VideoStream, sp.AudioStream]:
         """
         Set up the plugin and start processing audio input.
-
-        Args:
-            audio_input_stream (AudioStream): The input audio stream to process.
-
-        Returns:
-            Tuple[VideoStream, AudioStream]: The output video and audio streams.
         """
         self.audio_input_stream = audio_input_stream
         self.image_output_stream = sp.VideoStream()
@@ -183,17 +177,8 @@ class DeepreelPlugin:
 
 @sp.App()
 class DeepReelBot:
-    """
-    A bot that processes audio input, generates responses, and produces video output.
-    """
-
     async def setup(self):
-        """
-        Set up the bot. Currently empty, but can be used for initialization if needed.
-        """
-
-        ### TODO: change to your websocket url
-        self.deepreel_node = DeepreelPlugin(websocket_url="")
+        self.deepreel_node = DeepreelPlugin(websocket_url=DEEPREEL_WEBSOCKET_URL)
 
         self.llm_node = sp.OpenAIRealtime(
             initiate_conversation_with_greeting="Hi. How are you?",
@@ -207,13 +192,6 @@ class DeepReelBot:
     ):
         """
         The main processing pipeline for the bot.
-
-        Args:
-            audio_input_stream (sp.AudioStream): The input audio stream.
-            message_stream (sp.TextStream): The input text message stream.
-
-        Returns:
-            Tuple[sp.VideoStream, sp.AudioStream]: The output video and audio streams.
         """
         audio_output_stream, chat_history_stream = self.llm_node.run(message_stream, audio_input_stream)
 
@@ -229,10 +207,5 @@ class DeepReelBot:
 
 
 if __name__ == "__main__":
-    try:
-        bot = DeepReelBot()
-        bot.start()
-    except Exception:
-        pass
-    except KeyboardInterrupt:
-        pass
+    bot = DeepReelBot()
+    bot.start()
