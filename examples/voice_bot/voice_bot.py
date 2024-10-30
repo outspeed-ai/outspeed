@@ -47,7 +47,7 @@ class VoiceBot:
         pass
 
     @sp.streaming_endpoint()
-    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream) -> sp.AudioStream:
+    async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream):
         """
         Handle the main processing loop for the VoiceBot.
 
@@ -88,7 +88,9 @@ class VoiceBot:
         token_aggregator_stream: sp.TextStream = self.token_aggregator_node.run(llm_token_stream)
         tts_stream: sp.AudioStream = self.tts_node.run(token_aggregator_stream)
 
-        return tts_stream
+        chat_history_stream = sp.filter(chat_history_stream, lambda x: json.loads(x).get("role") != "user")
+
+        return tts_stream, chat_history_stream
 
     async def teardown(self) -> None:
         """

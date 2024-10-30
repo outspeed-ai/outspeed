@@ -37,7 +37,7 @@ def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec
         RealtimeServer().add_connection()
 
         def log_info(msg, *args):
-            logger.info(pc_id + " " + msg, *args)
+            logger.debug(pc_id + " " + msg, *args)
 
         # log_info("Created for %s", params["remote"])
 
