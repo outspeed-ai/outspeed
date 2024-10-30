@@ -40,10 +40,11 @@ class Metric(Enum):
 
 
 BACKEND_URL = os.getenv("BACKEND_URL")
+JOB_METRICS_ENDPOINT = os.getenv("JOB_METRICS_ENDPOINT")
 
 backend_metrics_url = None
-if BACKEND_URL:
-    backend_metrics_url = f"{BACKEND_URL}/job-metrics"
+if BACKEND_URL and JOB_METRICS_ENDPOINT:
+    backend_metrics_url = BACKEND_URL + JOB_METRICS_ENDPOINT
 
 
 def send_metric(metric: Metric, value: Optional[Any] = None):
