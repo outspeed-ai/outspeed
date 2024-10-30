@@ -167,6 +167,9 @@ class DeepgramSTT(Plugin):
             while True:
                 data: Union[AudioData, SessionData] = await self.input_queue.get()
 
+                if not self._ws:
+                    continue
+
                 if data == _CLOSE_MSG:
                     self._closed = True
                     await self._ws.send_str(data)
