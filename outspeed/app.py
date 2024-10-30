@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import traceback
 from typing import Any, Callable, Optional, Type
 
 from dotenv import load_dotenv
@@ -101,6 +102,7 @@ class RealtimeApp:
             pass
         except Exception as e:
             logging.error(f"Error in RealtimeApp: {e}")
+            logging.error(traceback.format_exc())
         except KeyboardInterrupt:
             logging.error("RealtimeApp was interrupted by the user")
         finally:
