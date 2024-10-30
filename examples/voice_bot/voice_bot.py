@@ -14,7 +14,6 @@ class VoiceBot:
         """
         This method is called when the app starts. It should be used to set up services, load models, and perform any necessary initialization.
         """
-        # Initialize the AI services
         self.deepgram_node = sp.DeepgramSTT()
         self.llm_node = sp.GroqLLM(
             system_prompt="You are a helpful assistant. Keep your answers very short. No special characters in responses.",
@@ -30,7 +29,6 @@ class VoiceBot:
         """
         It sets up and runs the various AI services in a pipeline to process audio input and generate audio output.
         """
-        # Set up the AI service pipeline
         deepgram_stream: sp.TextStream = self.deepgram_node.run(audio_input_stream)
 
         text_input_stream = sp.map(text_input_stream, lambda x: json.loads(x).get("content"))
