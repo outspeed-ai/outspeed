@@ -13,26 +13,6 @@ nest_asyncio.apply()
 PARENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def check_outspeed_version():
-    import importlib.metadata
-
-    from packaging import version
-
-    required_version = "0.2.1"
-
-    try:
-        current_version = importlib.metadata.version("outspeed")
-        if version.parse(current_version) < version.parse(required_version):
-            raise ValueError(f"Outspeed version {current_version} is not greater than {required_version}.")
-        else:
-            print(f"Outspeed version {current_version} meets the requirement.")
-    except importlib.metadata.PackageNotFoundError:
-        raise ValueError("Outspeed package is not installed.")
-
-
-check_outspeed_version()
-
-
 class Query(BaseModel):
     query_for_neural_search: str
 
@@ -108,9 +88,6 @@ class VoiceBot:
     async def teardown(self) -> None:
         """
         Clean up resources when the VoiceBot is shutting down.
-
-        This method is called when the app stops or is shut down unexpectedly.
-        It should be used to release resources and perform any necessary cleanup.
         """
         await self.deepgram_node.close()
         await self.llm_node.close()
