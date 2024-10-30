@@ -36,8 +36,12 @@ class RealtimeServer:
             return
         self.app: FastAPI = FastAPI()
         self.app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-        self.HOSTNAME: str = "0.0.0.0"
-        self.PORT: int = int(os.getenv("HTTP_PORT", 8080))
+        self.HOSTNAME: str = os.getenv("OUTSPEED_HOSTNAME", "localhost")
+        self.HOST_IP_ADDRESS: str = os.getenv("OUTSPEED_HOST_IP_ADDRESS", "0.0.0.0")
+        self.PORT: int = int(
+            os.getenv("OUTSPEED_HTTP_PORT") or os.getenv("HTTP_PORT", 8080)
+        )  # Keeping HTTP_PORT for backward compatibility
+        self._is_ssl_enabled: bool = False
         self.server: Optional[uvicorn.Server] = None
 
     async def start(self) -> None:
@@ -56,26 +60,27 @@ class RealtimeServer:
             self.server = uvicorn.Server(
                 config=uvicorn.Config(
                     self.app,
-                    host=self.HOSTNAME,
+                    host=self.HOST_IP_ADDRESS,
                     port=self.PORT,
                     log_level="info",
                     ssl_keyfile=os.environ["SSL_KEY_PATH"],
                     ssl_certfile=os.environ["SSL_CERT_PATH"],
                 )
             )
+            self._is_ssl_enabled = True
         else:
             # Local server
             self.app.add_api_route("/", self.get_local_offer_url, methods=["GET"])
             logging.info(f"Local server detected. Use http://{self.HOSTNAME}:{self.PORT}/ as Function URL.")
 
-            while is_port_in_use(self.HOSTNAME, self.PORT):
+            while is_port_in_use(self.HOST_IP_ADDRESS, self.PORT):
                 logging.info(f"Port {self.PORT} is in use. Trying next port...")
                 self.PORT += 1
 
             self.server = uvicorn.Server(
                 config=uvicorn.Config(
                     self.app,
-                    host=self.HOSTNAME,
+                    host=self.HOST_IP_ADDRESS,
                     port=self.PORT,
                     log_level="info",
                 )
@@ -113,7 +118,7 @@ class RealtimeServer:
         """
         Get the local offer URL.
         """
-        return {"address": f"http://{self.HOSTNAME}:{self.PORT}"}
+        return {"address": f"{'https' if self._is_ssl_enabled else 'http'}://{self.HOSTNAME}:{self.PORT}"}
 
     async def shutdown(self):
         """
