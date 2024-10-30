@@ -101,10 +101,18 @@ class RealtimeApp:
             logging.error("RealtimeServer was cancelled")
         except Exception as e:
             logging.error(f"Error in RealtimeApp: {e}")
-
+        except KeyboardInterrupt:
+            logging.error("RealtimeApp was interrupted by the user")
         finally:
             # Run teardown
+            try:
+                loop.run_until_complete(RealtimeServer().shutdown())
+            except Exception as e:
+                pass
             try:
                 loop.run_until_complete(self._user_cls_instance.teardown())
             except Exception as e:
                 pass
+
+            # Forcefully exit the program
+            os._exit(1)
