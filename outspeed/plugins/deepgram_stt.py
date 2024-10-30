@@ -94,8 +94,6 @@ class DeepgramSTT(Plugin):
 
     async def close(self) -> None:
         """Close the Deepgram connection and clean up resources."""
-        if self.input_queue:
-            self.input_queue.put_nowait(_CLOSE_MSG)
         await asyncio.sleep(0.2)
 
         await self._session.close()
@@ -166,14 +164,6 @@ class DeepgramSTT(Plugin):
         try:
             while True:
                 data: Union[AudioData, SessionData] = await self.input_queue.get()
-
-                if not self._ws:
-                    continue
-
-                if data == _CLOSE_MSG:
-                    self._closed = True
-                    await self._ws.send_str(data)
-                    break
 
                 if isinstance(data, SessionData):
                     await self.output_queue.put(data)
