@@ -94,23 +94,16 @@ def streaming_endpoint(audio_codec: str = AudioCodec.OPUS, video_codec: str = Vi
                 await asyncio.gather(*tasks)
 
             except asyncio.CancelledError:
-                logging.error("streaming_endpoint: CancelledError")
+                pass
             except Exception as e:
                 logging.error(f"Error in streaming_endpoint: {e}")
                 logging.error(f"Traceback:\n{traceback.format_exc()}")
             finally:
                 RealtimeServer().remove_connection()
                 tracing.end()
-                logging.info("Received exit, stopping bot")
-                # Clean up tasks
-                loop = asyncio.get_event_loop()
-                tasks = asyncio.all_tasks(loop)
-                for task in tasks:
-                    try:
-                        task.cancel()
-                        await task
-                    except asyncio.CancelledError:
-                        pass
+                logging.error("Streaming endpoint disconnected")
+
+                raise asyncio.CancelledError
 
         rt_func = RealtimeFunction(wrapper)
         return rt_func

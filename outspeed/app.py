@@ -98,7 +98,7 @@ class RealtimeApp:
             else:
                 loop.run_until_complete(asyncio.gather(RealtimeServer().start()))
         except asyncio.CancelledError:
-            logging.error("RealtimeServer was cancelled")
+            pass
         except Exception as e:
             logging.error(f"Error in RealtimeApp: {e}")
         except KeyboardInterrupt:
