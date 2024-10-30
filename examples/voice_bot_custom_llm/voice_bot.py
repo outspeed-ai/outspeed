@@ -1,6 +1,4 @@
-import asyncio
 import json
-import logging
 import os
 
 import requests
@@ -8,53 +6,30 @@ import requests
 import outspeed as sp
 
 
-class CustomLLM:
+class CustomLLM(sp.CustomLLMNode):
     def __init__(self, system_prompt: str):
+        super().__init__()
         self.system_prompt = system_prompt
-        self.output_queue = sp.TextStream()
         self.chat_history = []
 
         if self.system_prompt:
             self.chat_history.append({"role": "system", "content": self.system_prompt})
 
-    def run(self, input_queue: sp.TextStream) -> sp.TextStream:
-        self.input_queue = input_queue
-        asyncio.create_task(self.process_input())
-        return self.output_queue
+    async def process(self, input_text: str):
+        self.chat_history.append({"role": "user", "content": input_text})
 
-    async def process_input(self):
-        try:
-            while True:
-                input_text = await self.input_queue.get()
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            json={"messages": self.chat_history, "model": "gpt-4o-mini"},
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+                "Content-Type": "application/json",
+            },
+        )
 
-                if isinstance(input_text, sp.SessionData):
-                    self.output_queue.put(input_text)
-                    continue
+        self.chat_history.append({"role": "assistant", "content": response.json()["choices"][0]["message"]["content"]})
 
-                self.chat_history.append({"role": "user", "content": input_text})
-
-                print(os.getenv("OPENAI_API_KEY"))
-                response = requests.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    json={"messages": self.chat_history, "model": "gpt-4o-mini"},
-                    headers={
-                        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
-                        "Content-Type": "application/json",
-                    },
-                )
-
-                print(response.json())
-                self.chat_history.append(
-                    {"role": "assistant", "content": response.json()["choices"][0]["message"]["content"]}
-                )
-
-                await self.output_queue.put(self.chat_history[-1]["content"])
-
-        except asyncio.CancelledError:
-            return
-        except Exception as e:
-            logging.error(e)
-            raise asyncio.CancelledError
+        return response.json()["choices"][0]["message"]["content"]
 
 
 @sp.App()
@@ -99,7 +74,7 @@ class VoiceBot:
         token_aggregator_stream: sp.TextStream = self.token_aggregator_node.run(llm_token_stream)
         tts_stream: sp.AudioStream = self.tts_node.run(token_aggregator_stream)
 
-        # self.llm_node.set_interrupt_stream(vad_stream)
+        self.llm_node.set_interrupt_stream(vad_stream)
         self.token_aggregator_node.set_interrupt_stream(vad_stream.clone())
         self.tts_node.set_interrupt_stream(vad_stream.clone())
 
