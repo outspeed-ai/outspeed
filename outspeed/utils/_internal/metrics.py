@@ -60,25 +60,28 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
         value (Optional[Any]): The value to send. If not provided, the current timestamp will be used.
     """
 
-    if not backend_metrics_url:
-        logging.info("Skipped metric push...")
-        return
+    try:
+        if not backend_metrics_url:
+            logging.info("Skipped metric push...")
+            return
 
-    job_id = os.getenv("JOB_ID")
-    if not job_id:
-        logging.info("Skipped metric push...")
-        return
+        job_id = os.getenv("JOB_ID")
+        if not job_id:
+            logging.info("Skipped metric push...")
+            return
 
-    if not value and type(value) is not int and type(value) is not float:
-        value = datetime.datetime.now().timestamp()
+        if not value and type(value) is not int and type(value) is not float:
+            value = datetime.datetime.now().timestamp()
 
-    res = requests.post(
-        backend_metrics_url,
-        json={
-            "job_id": job_id,
-            metric.value: value,
-        },
-    )
+        res = requests.post(
+            backend_metrics_url,
+            json={
+                "job_id": job_id,
+                metric.value: value,
+            },
+        )
 
-    if res.status_code != 200:
-        logging.error(f"{metric.value} push failed: status {res.status_code}, reason: {res.text}")
+        if res.status_code != 200:
+            logging.error(f"{metric.value} push failed: status {res.status_code}, reason: {res.text}")
+    except Exception as e:
+        logging.error(f"{metric.value} push failed: error: {e}")
