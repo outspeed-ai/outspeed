@@ -112,7 +112,7 @@ class OpenAIRealtime(Plugin):
         self.respond_to_tool_calls = respond_to_tool_calls
         self._initialize_handlers()
 
-    def run(self, text_queue: TextStream, audio_queue: AudioStream) -> ByteStream:
+    def run(self, text_queue: TextStream, audio_queue: AudioStream):
         """
         Start the TTS synthesis process.
 
