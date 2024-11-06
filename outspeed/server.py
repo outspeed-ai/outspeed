@@ -71,11 +71,12 @@ class RealtimeServer:
         else:
             # Local server
             self.app.add_api_route("/", self.get_local_offer_url, methods=["GET"])
-            logging.info(f"Local server detected. Use http://{self.HOSTNAME}:{self.PORT}/ as Function URL.")
 
             while is_port_in_use(self.HOST_IP_ADDRESS, self.PORT):
                 logging.info(f"Port {self.PORT} is in use. Trying next port...")
                 self.PORT += 1
+
+            logging.info(f"Local server detected. Use http://{self.HOSTNAME}:{self.PORT}/ as Function URL.")
 
             self.server = uvicorn.Server(
                 config=uvicorn.Config(
