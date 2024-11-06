@@ -310,6 +310,7 @@ class OpenAIRealtime(Plugin):
             ServerEvent.RESPONSE_DONE: self._handle_response_done,
             ServerEvent.ERROR: self._handle_error,
             ServerEvent.RATE_LIMITS_UPDATED: self._handle_rate_limits_updated,
+            ServerEvent.RESPONSE_AUDIO_DONE: self._handle_audio_done,
         }
 
         self._events_to_ignore = [
@@ -318,7 +319,6 @@ class OpenAIRealtime(Plugin):
             ServerEvent.INPUT_AUDIO_BUFFER_COMMITTED,
             ServerEvent.INPUT_AUDIO_BUFFER_CLEARED,
             ServerEvent.RESPONSE_TEXT_DONE,
-            ServerEvent.RESPONSE_AUDIO_DONE,
             ServerEvent.RESPONSE_AUDIO_TRANSCRIPT_DONE,
             ServerEvent.RESPONSE_CONTENT_PART_DONE,
             ServerEvent.RESPONSE_OUTPUT_ITEM_DONE,
@@ -411,6 +411,11 @@ class OpenAIRealtime(Plugin):
         logging.info(f"Response done: {chat_msgs} \n")
         for chat_msg in chat_msgs:
             await self.text_output_queue.put(json.dumps(chat_msg))
+
+    async def _handle_audio_done(self, msg):
+        logging.info(f"Received audio done: {msg} \n")
+        self._generating = False
+        await self.audio_output_queue.put(None)
 
     async def _handle_rate_limits_updated(self, msg):
         logging.debug(f"Rate limits updated: {msg}\n")
