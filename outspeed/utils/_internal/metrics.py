@@ -1,10 +1,11 @@
+import asyncio
 import datetime
 from enum import Enum
 import os
 import logging
 from typing import Any, Optional
 
-import requests
+import aiohttp
 
 
 class Metric(Enum):
@@ -44,6 +45,9 @@ JOB_METRICS_ENDPOINT = os.getenv("JOB_METRICS_ENDPOINT")
 
 backend_metrics_url = None
 if BACKEND_URL and JOB_METRICS_ENDPOINT:
+    if not JOB_METRICS_ENDPOINT.startswith("/"):
+        JOB_METRICS_ENDPOINT = "/" + JOB_METRICS_ENDPOINT
+
     backend_metrics_url = BACKEND_URL + JOB_METRICS_ENDPOINT
 
     # delete the environment variables
@@ -62,26 +66,40 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
 
     try:
         if not backend_metrics_url:
-            logging.info("Skipped metric push...")
+            logging.debug("Skipped metric push...")
             return
 
         job_id = os.getenv("JOB_ID")
         if not job_id:
-            logging.info("Skipped metric push...")
+            logging.debug("Skipped metric push...")
             return
 
+        # set value to current timestamp if not provided
         if not value and type(value) is not int and type(value) is not float:
             value = datetime.datetime.now().timestamp()
 
-        res = requests.post(
-            backend_metrics_url,
-            json={
-                "job_id": job_id,
-                metric.value: value,
-            },
+        # send the request asynchronously
+        asyncio.create_task(
+            _send_to_backend(
+                payload={
+                    "job_id": job_id,
+                    metric.value: value,
+                },
+                metric=metric,
+            )
         )
+    except Exception as e:
+        logging.error(f"{metric.value} push failed: error: {e}")
 
-        if res.status_code != 200:
-            logging.error(f"{metric.value} push failed: status {res.status_code}, reason: {res.text}")
+
+async def _send_to_backend(payload: dict, metric: Metric):
+    assert backend_metrics_url
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(backend_metrics_url, json=payload) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logging.error(f"{metric.value} push failed: status {resp.status}, reason: {text}")
     except Exception as e:
         logging.error(f"{metric.value} push failed: error: {e}")
