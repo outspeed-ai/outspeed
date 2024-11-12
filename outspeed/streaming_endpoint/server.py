@@ -12,6 +12,7 @@ from aiortc.rtcrtpsender import RTCRtpSender
 from outspeed.server import RealtimeServer
 from outspeed.utils.audio import AudioCodec
 from outspeed.utils.images import VideoCodec
+from outspeed.utils._internal.metrics import Metric, send_metric
 
 ROOT = os.path.dirname(__file__)
 
@@ -29,6 +30,8 @@ def force_codec(pc, sender, forced_codec: str):
 
 def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec: str):
     async def handshake(params: Dict[str, str]):
+        send_metric(Metric.SDK_OFFER_CALLED)
+
         offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
         pc = RTCPeerConnection()
@@ -52,7 +55,13 @@ def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec
         @pc.on("connectionstatechange")
         async def on_connectionstatechange():
             log_info("Connection state is %s", pc.connectionState)
-            if pc.connectionState == "failed":
+
+            if pc.connectionState == "connected":
+                send_metric(Metric.SDK_WEBRTC_PC_CONNECTED)
+            elif pc.connectionState == "closed":
+                send_metric(Metric.SDK_WEBRTC_PC_CLOSED)
+            elif pc.connectionState == "failed":
+                send_metric(Metric.SDK_WEBRTC_PC_FAILED)
                 await pc.close()
                 pcs.discard(pc)
 
