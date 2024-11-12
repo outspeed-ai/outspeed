@@ -93,9 +93,9 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
 
 
 async def _send_to_backend(payload: dict, metric: Metric):
-    assert backend_metrics_url
-
     try:
+        assert backend_metrics_url
+
         async with aiohttp.ClientSession() as session:
             async with session.post(backend_metrics_url, json=payload) as resp:
                 if resp.status != 200:
