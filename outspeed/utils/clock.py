@@ -2,14 +2,14 @@ import time
 
 
 class Clock:
-    start_time = None
+    start__time = None
 
     @classmethod
     def start_playback(cls):
-        if cls.start_time is None:
-            cls.start_time = time.time()
+        if cls.start__time is None:
+            cls.start__time = time.time()
 
     @classmethod
     def get_playback_time(cls) -> float:
         cls.start_playback()
-        return time.time() - cls.start_time
+        return time.time() - cls.start__time
