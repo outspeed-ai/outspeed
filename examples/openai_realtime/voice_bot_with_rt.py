@@ -1,13 +1,13 @@
-import outspeed as sp
+import outspeed as osp
 
 
-@sp.App()
+@osp.App()
 class VoiceBot:
     async def setup(self) -> None:
         # Initialize the AI services
         self.rt_node = sp.OpenAIRealtime()
 
-    @sp.streaming_endpoint()
+    @osp.streaming_endpoint()
     async def run(self, audio_input_queue: sp.AudioStream, text_input_queue: sp.TextStream):
         # Set up the AI service pipeline
         audio_output_stream: sp.AudioStream
