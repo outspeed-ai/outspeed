@@ -53,12 +53,12 @@ class RealtimeApp:
         self._user_cls: Type = user_cls
         self._user_cls_instance: Any = self._user_cls(*args, **kwargs)
 
-    def __getattr__(self, k: str) -> Any:
+    def __getattr__(self, i: str) -> Any:
         """
         Attribute lookup method.
 
         Args:
-            k: The name of the attribute to look up.
+            i: The name of the attribute to look up.
 
         Returns:
             The value of the attribute.
@@ -66,12 +66,12 @@ class RealtimeApp:
         Raises:
             AttributeError: If the attribute is not found.
         """
-        if hasattr(self, k):
-            return getattr(self, k)
-        elif hasattr(self._user_cls_instance, k):
-            return getattr(self._user_cls_instance, k)
+        if hasattr(self, i):
+            return getattr(self, i)
+        elif hasattr(self._user_cls_instance, i):
+            return getattr(self._user_cls_instance, i)
         else:
-            raise AttributeError(k)
+            raise AttributeError(i)
 
     def start(self) -> None:
         """
