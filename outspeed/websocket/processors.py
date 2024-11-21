@@ -1,11 +1,11 @@
 import asyncio
 import base64
+import json
 import logging
 import time
 
 import numpy as np
 import scipy.signal as signal
-from fastapi import WebSocket
 
 from outspeed.data import AudioData
 from outspeed.streams import AudioStream, ByteStream, TextStream, VideoStream
@@ -152,22 +152,28 @@ class WebsocketOutputProcessor:
         while True:
             if not input_stream:
                 break
-            audio_data = await input_stream.get()
-            if audio_data is None:
+            data_payload = await input_stream.get()
+            if data_payload is None:
                 print("Sending audio end")
                 json_data = {"type": "audio_end", "timestamp": time.time()}
                 await self._outputTrack.put(json_data)
-            elif isinstance(audio_data, AudioData):
-                data = resample_wav_bytes(audio_data, self.sample_rate)
+            elif isinstance(data_payload, AudioData):
+                data = resample_wav_bytes(data_payload, self.sample_rate)
                 json_data = {
                     "type": "audio",
                     "data": base64.b64encode(data).decode(),
                     "timestamp": time.time(),
-                    "sample_rate": audio_data.sample_rate,
+                    "sample_rate": data_payload.sample_rate,
                 }
                 await self._outputTrack.put(json_data)
-            elif isinstance(audio_data, str):
-                json_data = {"type": "message", "data": audio_data, "timestamp": time.time()}
+            elif isinstance(data_payload, (str, dict)):
+                # Check if data_payload is JSON serializable
+                try:
+                    json.dumps(data_payload)
+                except (TypeError, OverflowError):
+                    print(data_payload)
+                    raise ValueError(f"Data is not JSON serializable: {type(data_payload)}")
+                json_data = {"type": "message", "data": data_payload, "timestamp": time.time()}
                 await self._outputTrack.put(json_data)
             else:
-                raise ValueError(f"Unsupported data type: {type(audio_data)}")
+                raise ValueError(f"Unsupported data type: {type(data_payload)}")
