@@ -40,8 +40,8 @@ class Metric(Enum):
     """
 
 
-BACKEND_URL = os.getenv("BACKEND_URL")
-JOB_METRICS_ENDPOINT = os.getenv("JOB_METRICS_ENDPOINT")
+BACKEND_URL = os.getenv("OUTSPEED_BACKEND_URL")
+JOB_METRICS_ENDPOINT = os.getenv("OUTSPEED_JOB_METRICS_ENDPOINT")
 
 backend_metrics_url = None
 if BACKEND_URL and JOB_METRICS_ENDPOINT:
@@ -51,8 +51,8 @@ if BACKEND_URL and JOB_METRICS_ENDPOINT:
     backend_metrics_url = BACKEND_URL + JOB_METRICS_ENDPOINT
 
     # delete the environment variables
-    del os.environ["BACKEND_URL"]
-    del os.environ["JOB_METRICS_ENDPOINT"]
+    del os.environ["OUTSPEED_BACKEND_URL"]
+    del os.environ["OUTSPEED_JOB_METRICS_ENDPOINT"]
 
 
 def send_metric(metric: Metric, value: Optional[Any] = None):
@@ -69,7 +69,7 @@ def send_metric(metric: Metric, value: Optional[Any] = None):
             logging.debug("Skipped metric push...")
             return
 
-        job_id = os.getenv("JOB_ID")
+        job_id = os.getenv("OUTSPEED_JOB_ID")
         if not job_id:
             logging.debug("Skipped metric push...")
             return
