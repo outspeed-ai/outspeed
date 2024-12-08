@@ -1,15 +1,17 @@
 import asyncio
+import inspect
 import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Callable, Dict, Optional
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from fastapi import HTTPException
 from aiortc.rtcrtpsender import RTCRtpSender
 
 from outspeed.server import RealtimeServer
+from outspeed.streams import AudioStream, TextStream, VideoStream
 from outspeed.utils.audio import AudioCodec
 from outspeed.utils.images import VideoCodec
 from outspeed.utils._internal.metrics import Metric, send_metric
@@ -28,7 +30,61 @@ def force_codec(pc, sender, forced_codec: str):
     transceiver.setCodecPreferences([codec for codec in codecs if codec.mimeType.lower() == forced_codec.lower()])
 
 
-def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec: str):
+async def process_func(func: Callable):
+    audio_input_q: Optional[AudioStream] = None
+    video_input_q: Optional[VideoStream] = None
+    text_input_q: Optional[TextStream] = None
+
+    # Inspect the function signature and set up input streams
+    signature = inspect.signature(func)
+    parameters = signature.parameters
+    args = []
+    kwargs = {}
+    for name, param in parameters.items():
+        if param.annotation == AudioStream:
+            audio_input_q = AudioStream()
+            kwargs[name] = audio_input_q
+        elif param.annotation == VideoStream:
+            video_input_q = VideoStream()
+            kwargs[name] = video_input_q
+        elif param.annotation == TextStream:
+            text_input_q = TextStream()
+            kwargs[name] = text_input_q
+
+    # Call the wrapped function and get output streams
+    output_streams = await func(*args, **kwargs)
+    # Ensure output_streams is iterable
+    if not isinstance(output_streams, (list, tuple)):
+        output_streams = (output_streams,)
+
+    # Initialize output queues
+    audio_output_queue, video_output_queue, text_output_queue = None, None, None
+    for s in output_streams:
+        if isinstance(s, AudioStream):
+            audio_output_queue = s
+        elif isinstance(s, VideoStream):
+            video_output_queue = s
+        elif isinstance(s, TextStream):
+            text_output_queue = s
+
+    # Set up RTC drivers for each stream type
+    video_output_frame_processor = VideoRTCDriver(video_input_q, video_output_queue)
+    # TODO: get audio_output_layout, audio_output_format, audio_output_sample_rate from SDP
+    audio_output_frame_processor = AudioRTCDriver(audio_input_q, audio_output_queue)
+    text_output_processor = TextRTCDriver(text_input_q, text_output_queue)
+
+    # Create and run tasks for each processor
+    tasks = [
+        asyncio.create_task(video_output_frame_processor.run_input()),
+        asyncio.create_task(audio_output_frame_processor.run()),
+        asyncio.create_task(text_output_processor.run_input()),
+    ]
+    await asyncio.gather(*tasks)
+
+    return audio_output_frame_processor, video_output_frame_processor, text_output_processor
+
+
+def offer(func: Callable, audio_codec: str, video_codec: str):
     async def handshake(params: Dict[str, str]):
         send_metric(Metric.SDK_OFFER_CALLED)
 
@@ -38,6 +94,8 @@ def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec
         pc_id = "PeerConnection(%s)" % uuid.uuid4()
         pcs.add(pc)
         RealtimeServer().add_connection()
+
+        text_driver, audio_driver, video_driver = await process_func(func)
 
         def log_info(msg, *args):
             logger.debug(pc_id + " " + msg, *args)
@@ -63,6 +121,7 @@ def offer(audio_driver, video_driver, text_driver, audio_codec: str, video_codec
             elif pc.connectionState == "failed":
                 send_metric(Metric.SDK_WEBRTC_PC_FAILED)
                 await pc.close()
+                RealtimeServer().remove_connection()
                 pcs.discard(pc)
 
         # For some unknown reason, making this funciton async breaks aiortc
@@ -130,15 +189,11 @@ async def on_shutdown():
     pcs.clear()
 
 
-def create_and_run_server(
-    audio_driver,
-    video_driver,
-    text_driver,
+def create_webrtc_offer_endpoint(
+    func: Callable,
     audio_codec: str,
     video_codec: str,
 ):
     fastapi_app = RealtimeServer().get_app()
-    fastapi_app.add_api_route(
-        "/offer", offer(audio_driver, video_driver, text_driver, audio_codec, video_codec), methods=["POST"]
-    )
+    fastapi_app.add_api_route("/offer", offer(func, audio_codec, video_codec), methods=["POST"])
     fastapi_app.add_event_handler("shutdown", on_shutdown)
